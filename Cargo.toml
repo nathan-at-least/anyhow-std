@@ -5,6 +5,3 @@ edition = "2021"
 
 [dependencies]
 anyhow = "^1.0.69"
-
-[dev-dependencies]
-indoc = "^2.0.0"

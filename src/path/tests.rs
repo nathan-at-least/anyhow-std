@@ -1,5 +1,4 @@
 use crate::PathAnyhow;
-use indoc::indoc;
 use std::path::Path;
 
 #[test]
@@ -18,13 +17,7 @@ fn to_str_invalid_utf8() -> anyhow::Result<()> {
     let path = Path::new(OsStr::from_bytes(b"\x81\xff"));
     assert_error_desc_eq(
         path.to_str_anyhow(),
-        indoc! { r#"
-            while processing path "\x81\xFF"
-
-            Caused by:
-                invalid UTF8
-        "#
-        },
+        r#"while processing path "\x81\xFF": invalid UTF8"#,
     );
     Ok(())
 }
@@ -42,13 +35,7 @@ fn parent_root() -> anyhow::Result<()> {
     let path = Path::new("/");
     assert_error_desc_eq(
         path.parent_anyhow(),
-        indoc! { r#"
-            while processing path "/"
-
-            Caused by:
-                expected parent directory
-        "#
-        },
+        r#"while processing path "/": expected parent directory"#,
     );
     Ok(())
 }
@@ -65,13 +52,7 @@ fn file_name_missing() -> anyhow::Result<()> {
     let path = Path::new("/foo/..");
     assert_error_desc_eq(
         path.file_name_anyhow(),
-        indoc! { r#"
-            while processing path "/foo/.."
-
-            Caused by:
-                missing expected filename
-        "#
-        },
+        r#"while processing path "/foo/..": missing expected filename"#,
     );
     Ok(())
 }
@@ -89,19 +70,12 @@ fn strip_prefix_err() -> anyhow::Result<()> {
     let path = Path::new("/foo/bar/quz.txt");
     assert_error_desc_eq(
         path.strip_prefix_anyhow("/bananas"),
-        indoc! { r#"
-            while processing path "/foo/bar/quz.txt"
-
-            Caused by:
-                0: with prefix "/bananas"
-                1: prefix not found
-        "#
-        },
+        r#"while processing path "/foo/bar/quz.txt": with prefix "/bananas": prefix not found"#,
     );
     Ok(())
 }
 
 fn assert_error_desc_eq<T>(res: anyhow::Result<T>, expected: &str) {
-    let error = format!("{:?}", res.err().unwrap());
+    let error = format!("{:#}", res.err().unwrap());
     assert_eq!(error, expected.trim_end());
 }
