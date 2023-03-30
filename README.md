@@ -82,3 +82,13 @@ isn't necessarily an "error" per se, but the `…_anyhow` methods result
 in an error in this case. So these methods should only be used when code
 expects `Some` results, and if your code should handle `None` as a
 "non-error", it can simply use the [std] method.
+
+## API Coverage
+
+This crate only wraps a small subset of [std] based on what the author
+needs in other projects. If you'd like to see more [std] APIs wrapped,
+patches are welcome. ;-)
+
+The `0.1.x` version series will add APIs as they are useful and may
+change error context strings. The semantics of wrapped functions should
+not vary much, but might.
