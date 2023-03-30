@@ -136,6 +136,24 @@ fn extension_of_dot_file() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[test]
+fn metadata_ok() -> anyhow::Result<()> {
+    let path = Path::new("/");
+    assert!(path.metadata_anyhow().ok().is_some());
+    Ok(())
+}
+
+#[test]
+fn metadata_missing() -> anyhow::Result<()> {
+    let path = Path::new("/this/path/should/not/exist");
+    assert_error_desc_eq(
+        path.metadata_anyhow(),
+        // BUG: This error message is platform specific:
+        r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
+    );
+    Ok(())
+}
+
 fn assert_error_desc_eq<T>(res: anyhow::Result<T>, expected: &str) {
     let error = format!("{:#}", res.err().unwrap());
     assert_eq!(error, expected.trim_end());

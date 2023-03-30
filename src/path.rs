@@ -1,5 +1,6 @@
 use anyhow::Context;
 use std::ffi::OsStr;
+use std::fs::Metadata;
 use std::path::Path;
 
 pub trait PathAnyhow {
@@ -11,6 +12,7 @@ pub trait PathAnyhow {
         P: AsRef<Path>;
     fn file_stem_anyhow(&self) -> anyhow::Result<&OsStr>;
     fn extension_anyhow(&self) -> anyhow::Result<&OsStr>;
+    fn metadata_anyhow(&self) -> anyhow::Result<Metadata>;
 }
 
 macro_rules! wrap_nullary_option_method {
@@ -20,6 +22,15 @@ macro_rules! wrap_nullary_option_method {
             $cb(p)
                 .ok_or_else(|| anyhow::Error::msg($errordesc))
                 .with_context(|| format!("while processing path {:?}", p.display()))
+        }
+    };
+}
+
+macro_rules! wrap_nullary_result_method {
+    ( $method:ident, $cb:expr, $ret:ty ) => {
+        fn $method(&self) -> anyhow::Result<$ret> {
+            let p = self.as_ref();
+            $cb(p).with_context(|| format!("while processing path {:?}", p.display()))
         }
     };
 }
@@ -68,6 +79,8 @@ where
         &OsStr,
         "missing expected extension"
     );
+
+    wrap_nullary_result_method!(metadata_anyhow, Path::metadata, Metadata);
 }
 
 #[cfg(test)]
