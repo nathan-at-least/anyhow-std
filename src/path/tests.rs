@@ -1,3 +1,5 @@
+// BUGS: Many tests use unix-specific paths, primarily by assuming "/" exists as a directory.
+
 use crate::PathAnyhow;
 use std::path::Path;
 
