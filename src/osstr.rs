@@ -8,18 +8,14 @@ pub trait OsStrAnyhow {
     fn to_str_anyhow(&self) -> anyhow::Result<&str>;
 }
 
-impl<P> OsStrAnyhow for P
-where
-    P: AsRef<OsStr>,
-{
+impl OsStrAnyhow for OsStr {
     fn to_str_anyhow(&self) -> anyhow::Result<&str> {
-        let sref = self.as_ref();
-        sref.to_str()
+        self.to_str()
             .ok_or_else(|| anyhow::Error::msg("not valid utf8"))
             .with_context(|| {
                 format!(
                     "while processing os string {:?}",
-                    truncate_long_strings(sref.to_string_lossy())
+                    truncate_long_strings(self.to_string_lossy())
                 )
             })
     }

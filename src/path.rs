@@ -33,16 +33,12 @@ macro_rules! wrap_nullary_option_method {
 macro_rules! wrap_nullary_result_method {
     ( $method:ident, $cb:expr, $ret:ty ) => {
         fn $method(&self) -> anyhow::Result<$ret> {
-            let p = self.as_ref();
-            $cb(p).with_context(|| format!("while processing path {:?}", p.display()))
+            $cb(self).with_context(|| format!("while processing path {:?}", self.display()))
         }
     };
 }
 
-impl<P> PathAnyhow for P
-where
-    P: AsRef<Path>,
-{
+impl PathAnyhow for Path {
     wrap_nullary_option_method!(to_str_anyhow, Path::to_str, &str, "invalid UTF8");
 
     wrap_nullary_option_method!(
@@ -63,11 +59,10 @@ where
     where
         Q: AsRef<Path>,
     {
-        let p = self.as_ref();
         let bref = base.as_ref();
-        p.strip_prefix(bref)
+        self.strip_prefix(bref)
             .with_context(|| format!("with prefix {:?}", bref.display()))
-            .with_context(|| format!("while processing path {:?}", p.display()))
+            .with_context(|| format!("while processing path {:?}", self.display()))
     }
 
     wrap_nullary_option_method!(
