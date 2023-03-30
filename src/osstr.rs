@@ -25,7 +25,7 @@ where
     }
 }
 
-fn truncate_long_strings<'a>(s: Cow<'a, str>) -> Cow<'a, str> {
+fn truncate_long_strings(s: Cow<'_, str>) -> Cow<'_, str> {
     let sref = s.as_ref();
     let charcnt = sref.chars().count();
 
