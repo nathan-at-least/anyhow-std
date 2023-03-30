@@ -15,6 +15,7 @@ pub trait PathAnyhow {
     fn metadata_anyhow(&self) -> anyhow::Result<Metadata>;
     fn symlink_metadata_anyhow(&self) -> anyhow::Result<Metadata>;
     fn canonicalize_anyhow(&self) -> anyhow::Result<PathBuf>;
+    fn read_link_anyhow(&self) -> anyhow::Result<PathBuf>;
 }
 
 macro_rules! wrap_nullary_option_method {
@@ -85,6 +86,7 @@ where
     wrap_nullary_result_method!(metadata_anyhow, Path::metadata, Metadata);
     wrap_nullary_result_method!(symlink_metadata_anyhow, Path::symlink_metadata, Metadata);
     wrap_nullary_result_method!(canonicalize_anyhow, Path::canonicalize, PathBuf);
+    wrap_nullary_result_method!(read_link_anyhow, Path::read_link, PathBuf);
 }
 
 #[cfg(test)]

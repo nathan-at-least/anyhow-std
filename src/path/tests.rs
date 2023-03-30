@@ -191,6 +191,23 @@ fn canonicalize_missing() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[ignore]
+#[test]
+fn read_link_ok() -> anyhow::Result<()> {
+    todo!(); // We need to create a symbolic link then test the target method.
+}
+
+#[test]
+fn read_link_missing() -> anyhow::Result<()> {
+    let path = Path::new("/this/path/should/not/exist");
+    assert_error_desc_eq(
+        path.read_link_anyhow(),
+        // BUG: This error message is platform specific:
+        r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
+    );
+    Ok(())
+}
+
 fn assert_error_desc_eq<T>(res: anyhow::Result<T>, expected: &str) {
     let error = format!("{:#}", res.err().unwrap());
     assert_eq!(error, expected.trim_end());
