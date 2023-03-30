@@ -75,6 +75,67 @@ fn strip_prefix_err() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[test]
+fn file_stem_present() -> anyhow::Result<()> {
+    let path = Path::new("/foo/bar.txt");
+    assert_eq!("bar", path.file_stem_anyhow()?);
+    Ok(())
+}
+
+#[test]
+fn file_stem_missing() -> anyhow::Result<()> {
+    let path = Path::new("/foo/bar");
+    assert_eq!("bar", path.file_stem_anyhow()?);
+    Ok(())
+}
+
+#[test]
+fn file_stem_without_name() -> anyhow::Result<()> {
+    let path = Path::new("/foo/..");
+    assert_error_desc_eq(
+        path.file_stem_anyhow(),
+        r#"while processing path "/foo/..": missing expected filename"#,
+    );
+    Ok(())
+}
+
+#[test]
+fn extension_ok() -> anyhow::Result<()> {
+    let path = Path::new("/foo/bar.txt");
+    assert_eq!("txt", path.extension_anyhow()?);
+    Ok(())
+}
+
+#[test]
+fn extension_missing_filename() -> anyhow::Result<()> {
+    let path = Path::new("/foo/..");
+    assert_error_desc_eq(
+        path.extension_anyhow(),
+        r#"while processing path "/foo/..": missing expected extension"#,
+    );
+    Ok(())
+}
+
+#[test]
+fn extension_missing_extension() -> anyhow::Result<()> {
+    let path = Path::new("/foo/bar");
+    assert_error_desc_eq(
+        path.extension_anyhow(),
+        r#"while processing path "/foo/bar": missing expected extension"#,
+    );
+    Ok(())
+}
+
+#[test]
+fn extension_of_dot_file() -> anyhow::Result<()> {
+    let path = Path::new("/foo/.bar");
+    assert_error_desc_eq(
+        path.extension_anyhow(),
+        r#"while processing path "/foo/.bar": missing expected extension"#,
+    );
+    Ok(())
+}
+
 fn assert_error_desc_eq<T>(res: anyhow::Result<T>, expected: &str) {
     let error = format!("{:#}", res.err().unwrap());
     assert_eq!(error, expected.trim_end());

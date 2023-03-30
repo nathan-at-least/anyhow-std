@@ -9,6 +9,8 @@ pub trait PathAnyhow {
     fn strip_prefix_anyhow<P>(&self, base: P) -> anyhow::Result<&Path>
     where
         P: AsRef<Path>;
+    fn file_stem_anyhow(&self) -> anyhow::Result<&OsStr>;
+    fn extension_anyhow(&self) -> anyhow::Result<&OsStr>;
 }
 
 macro_rules! wrap_nullary_option_method {
@@ -52,6 +54,20 @@ where
             .with_context(|| format!("with prefix {:?}", bref.display()))
             .with_context(|| format!("while processing path {:?}", p.display()))
     }
+
+    wrap_nullary_option_method!(
+        file_stem_anyhow,
+        Path::file_stem,
+        &OsStr,
+        "missing expected filename"
+    );
+
+    wrap_nullary_option_method!(
+        extension_anyhow,
+        Path::extension,
+        &OsStr,
+        "missing expected extension"
+    );
 }
 
 #[cfg(test)]
