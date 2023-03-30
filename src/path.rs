@@ -13,6 +13,7 @@ pub trait PathAnyhow {
     fn file_stem_anyhow(&self) -> anyhow::Result<&OsStr>;
     fn extension_anyhow(&self) -> anyhow::Result<&OsStr>;
     fn metadata_anyhow(&self) -> anyhow::Result<Metadata>;
+    fn symlink_metadata_anyhow(&self) -> anyhow::Result<Metadata>;
 }
 
 macro_rules! wrap_nullary_option_method {
@@ -81,6 +82,7 @@ where
     );
 
     wrap_nullary_result_method!(metadata_anyhow, Path::metadata, Metadata);
+    wrap_nullary_result_method!(symlink_metadata_anyhow, Path::symlink_metadata, Metadata);
 }
 
 #[cfg(test)]
