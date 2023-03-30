@@ -32,6 +32,32 @@ fn to_str_invalid_utf8() -> anyhow::Result<()> {
 }
 
 #[test]
+fn parent_non_root() -> anyhow::Result<()> {
+    let path = Path::new("/foo/bar.txt");
+    let expected = Path::new("/foo/");
+    assert_eq!(expected, path.parent_anyhow()?);
+    Ok(())
+}
+
+#[test]
+fn parent_root() -> anyhow::Result<()> {
+    let path = Path::new("/");
+    let error = format!("{:?}", path.parent_anyhow().err().unwrap());
+    assert_eq!(
+        error,
+        indoc! { r#"
+            while processing path "/"
+
+            Caused by:
+                expected parent directory
+        "#
+        }
+        .trim_end()
+    );
+    Ok(())
+}
+
+#[test]
 fn file_name_present() -> anyhow::Result<()> {
     let path = Path::new("/foo/bar.txt");
     assert_eq!("bar.txt", path.file_name_anyhow()?);
