@@ -172,6 +172,25 @@ fn symlink_metadata_missing() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[test]
+fn canonicalize_ok() -> anyhow::Result<()> {
+    // BUG: Platform specific: on some platforms "/.." may not exist.
+    let path = Path::new("/..");
+    assert_eq!(Path::new("/"), path.canonicalize_anyhow()?);
+    Ok(())
+}
+
+#[test]
+fn canonicalize_missing() -> anyhow::Result<()> {
+    let path = Path::new("/this/path/should/not/exist");
+    assert_error_desc_eq(
+        path.canonicalize_anyhow(),
+        // BUG: This error message is platform specific:
+        r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
+    );
+    Ok(())
+}
+
 fn assert_error_desc_eq<T>(res: anyhow::Result<T>, expected: &str) {
     let error = format!("{:#}", res.err().unwrap());
     assert_eq!(error, expected.trim_end());

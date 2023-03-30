@@ -1,7 +1,7 @@
 use anyhow::Context;
 use std::ffi::OsStr;
 use std::fs::Metadata;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub trait PathAnyhow {
     fn to_str_anyhow(&self) -> anyhow::Result<&str>;
@@ -14,6 +14,7 @@ pub trait PathAnyhow {
     fn extension_anyhow(&self) -> anyhow::Result<&OsStr>;
     fn metadata_anyhow(&self) -> anyhow::Result<Metadata>;
     fn symlink_metadata_anyhow(&self) -> anyhow::Result<Metadata>;
+    fn canonicalize_anyhow(&self) -> anyhow::Result<PathBuf>;
 }
 
 macro_rules! wrap_nullary_option_method {
@@ -83,6 +84,7 @@ where
 
     wrap_nullary_result_method!(metadata_anyhow, Path::metadata, Metadata);
     wrap_nullary_result_method!(symlink_metadata_anyhow, Path::symlink_metadata, Metadata);
+    wrap_nullary_result_method!(canonicalize_anyhow, Path::canonicalize, PathBuf);
 }
 
 #[cfg(test)]
