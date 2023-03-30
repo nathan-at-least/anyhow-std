@@ -1,6 +1,6 @@
 use anyhow::Context;
 use std::ffi::OsStr;
-use std::fs::Metadata;
+use std::fs::{Metadata, ReadDir};
 use std::path::{Path, PathBuf};
 
 pub trait PathAnyhow {
@@ -16,6 +16,7 @@ pub trait PathAnyhow {
     fn symlink_metadata_anyhow(&self) -> anyhow::Result<Metadata>;
     fn canonicalize_anyhow(&self) -> anyhow::Result<PathBuf>;
     fn read_link_anyhow(&self) -> anyhow::Result<PathBuf>;
+    fn read_dir_anyhow(&self) -> anyhow::Result<ReadDir>;
 }
 
 macro_rules! wrap_nullary_option_method {
@@ -87,6 +88,7 @@ where
     wrap_nullary_result_method!(symlink_metadata_anyhow, Path::symlink_metadata, Metadata);
     wrap_nullary_result_method!(canonicalize_anyhow, Path::canonicalize, PathBuf);
     wrap_nullary_result_method!(read_link_anyhow, Path::read_link, PathBuf);
+    wrap_nullary_result_method!(read_dir_anyhow, Path::read_dir, ReadDir);
 }
 
 #[cfg(test)]

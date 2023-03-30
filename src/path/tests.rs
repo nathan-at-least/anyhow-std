@@ -141,7 +141,7 @@ fn extension_of_dot_file() -> anyhow::Result<()> {
 #[test]
 fn metadata_ok() -> anyhow::Result<()> {
     let path = Path::new("/");
-    assert!(path.metadata_anyhow().ok().is_some());
+    assert!(path.metadata_anyhow().is_ok());
     Ok(())
 }
 
@@ -204,6 +204,24 @@ fn read_link_missing() -> anyhow::Result<()> {
     let path = Path::new("/this/path/should/not/exist");
     assert_error_desc_eq(
         path.read_link_anyhow(),
+        // BUG: This error message is platform specific:
+        r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
+    );
+    Ok(())
+}
+
+#[test]
+fn read_dir_ok() -> anyhow::Result<()> {
+    let path = Path::new("/");
+    assert!(path.read_dir_anyhow().is_ok());
+    Ok(())
+}
+
+#[test]
+fn read_dir_missing() -> anyhow::Result<()> {
+    let path = Path::new("/this/path/should/not/exist");
+    assert_error_desc_eq(
+        path.read_dir_anyhow(),
         // BUG: This error message is platform specific:
         r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
     );
