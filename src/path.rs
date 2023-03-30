@@ -6,6 +6,9 @@ pub trait PathAnyhow {
     fn to_str_anyhow(&self) -> anyhow::Result<&str>;
     fn parent_anyhow(&self) -> anyhow::Result<&Path>;
     fn file_name_anyhow(&self) -> anyhow::Result<&OsStr>;
+    fn strip_prefix_anyhow<P>(&self, base: P) -> anyhow::Result<&Path>
+    where
+        P: AsRef<Path>;
 }
 
 macro_rules! wrap_nullary_option_method {
@@ -38,6 +41,17 @@ where
         &OsStr,
         "missing expected filename"
     );
+
+    fn strip_prefix_anyhow<Q>(&self, base: Q) -> anyhow::Result<&Path>
+    where
+        Q: AsRef<Path>,
+    {
+        let p = self.as_ref();
+        let bref = base.as_ref();
+        p.strip_prefix(bref)
+            .with_context(|| format!("with prefix {:?}", bref.display()))
+            .with_context(|| format!("while processing path {:?}", p.display()))
+    }
 }
 
 #[cfg(test)]

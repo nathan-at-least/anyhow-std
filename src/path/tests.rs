@@ -76,6 +76,31 @@ fn file_name_missing() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[test]
+fn strip_prefix_ok() -> anyhow::Result<()> {
+    let path = Path::new("/foo/bar/quz.txt");
+    let expected = Path::new("bar/quz.txt");
+    assert_eq!(expected, path.strip_prefix_anyhow("/foo")?);
+    Ok(())
+}
+
+#[test]
+fn strip_prefix_err() -> anyhow::Result<()> {
+    let path = Path::new("/foo/bar/quz.txt");
+    assert_error_desc_eq(
+        path.strip_prefix_anyhow("/bananas"),
+        indoc! { r#"
+            while processing path "/foo/bar/quz.txt"
+
+            Caused by:
+                0: with prefix "/bananas"
+                1: prefix not found
+        "#
+        },
+    );
+    Ok(())
+}
+
 fn assert_error_desc_eq<T>(res: anyhow::Result<T>, expected: &str) {
     let error = format!("{:?}", res.err().unwrap());
     assert_eq!(error, expected.trim_end());
