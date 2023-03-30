@@ -4,7 +4,9 @@ use std::ffi::OsStr;
 
 const LONG_STRING_DISPLAY_LIMIT: usize = 80;
 
+/// Extend [std::ffi::OsStr] with [anyhow] methods
 pub trait OsStrAnyhow {
+    /// Produce a utf8 `&str` or provide an error describing the string, truncated if long
     fn to_str_anyhow(&self) -> anyhow::Result<&str>;
 }
 

@@ -3,19 +3,41 @@ use std::ffi::OsStr;
 use std::fs::{Metadata, ReadDir};
 use std::path::{Path, PathBuf};
 
+/// Extend [Path] with [anyhow] methods
 pub trait PathAnyhow {
+    /// Wrap [Path::to_str], providing the path as error context
     fn to_str_anyhow(&self) -> anyhow::Result<&str>;
+
+    /// Wrap [Path::parent], providing the path as error context
     fn parent_anyhow(&self) -> anyhow::Result<&Path>;
+
+    /// Wrap [Path::file_name], providing the path as error context
     fn file_name_anyhow(&self) -> anyhow::Result<&OsStr>;
+
+    /// Wrap [Path::strip_prefix], providing the path and `base` as error context
     fn strip_prefix_anyhow<P>(&self, base: P) -> anyhow::Result<&Path>
     where
         P: AsRef<Path>;
+
+    /// Wrap [Path::file_stem], providing the path as error context
     fn file_stem_anyhow(&self) -> anyhow::Result<&OsStr>;
+
+    /// Wrap [Path::extension], providing the path as error context
     fn extension_anyhow(&self) -> anyhow::Result<&OsStr>;
+
+    /// Wrap [Path::metadata], providing the path as error context
     fn metadata_anyhow(&self) -> anyhow::Result<Metadata>;
+
+    /// Wrap [Path::symlink_metadata], providing the path as error context
     fn symlink_metadata_anyhow(&self) -> anyhow::Result<Metadata>;
+
+    /// Wrap [Path::canonicalize], providing the path as error context
     fn canonicalize_anyhow(&self) -> anyhow::Result<PathBuf>;
+
+    /// Wrap [Path::read_link], providing the path as error context
     fn read_link_anyhow(&self) -> anyhow::Result<PathBuf>;
+
+    /// Wrap [Path::read_dir], providing the path as error context
     fn read_dir_anyhow(&self) -> anyhow::Result<ReadDir>;
 }
 
