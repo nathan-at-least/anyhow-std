@@ -67,6 +67,7 @@ A consistent pattern is used to extend [std] types:
 - An extension trait is provided named `<std type>Anyhow`, for example: [OsStrAnyhow]
 - An impl is provided for the target type, for example `impl OsStrAnyhow for OsStr { … }`
 - For a subset of methods of the target type, extension trait methods are provided named `<method name>_anyhow`. These methods always return [anyhow::Result] types, for example: [`OsStrAnyhow::to_str_anyhow`].
+- Additionally, some `…_anyhow` methods may be provided to wrap functionality not found directly on the target type. For example `Path::read_to_string` does not exist, but would be a straightforward wrapper for [`std::fs::read_to_string`], so this crate provides [`PathAnyhow::read_to_string_anyhow`]
 
 By consistently appending `_anyhow` to wrapped methods, callers can
 unambiguously choose when to use these methods versus the [std] methods.

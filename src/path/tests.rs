@@ -228,6 +228,213 @@ fn read_dir_missing() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[test]
+fn copy_from_missing() -> anyhow::Result<()> {
+    let from = Path::new("/this/path/should/not/exist");
+    let to = Path::new("/this/path/also/should/not/exist");
+    assert_error_desc_eq(
+        from.copy_anyhow(to),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while copying {:?} to {:?}: No such file or directory (os error 2)",
+            from.display(),
+            to.display()
+        ),
+    );
+    Ok(())
+}
+
+#[test]
+fn copy_to_non_existent_directory() -> anyhow::Result<()> {
+    let from = tempfile::NamedTempFile::new()?;
+    let to = Path::new("/this/path/also/should/not/exist");
+    assert_error_desc_eq(
+        from.path().copy_anyhow(to),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while copying {:?} to {:?}: No such file or directory (os error 2)",
+            from.path().display(),
+            to.display(),
+        ),
+    );
+    Ok(())
+}
+
+#[test]
+fn create_dir_within_non_existent_directory() -> anyhow::Result<()> {
+    let path = Path::new("/this/path/also/should/not/exist");
+    assert_error_desc_eq(
+        path.create_dir_anyhow(),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while processing path {:?}: No such file or directory (os error 2)",
+            path.display(),
+        ),
+    );
+    Ok(())
+}
+
+#[test]
+fn create_dir_all_permission_denied() -> anyhow::Result<()> {
+    let dir = tempfile::TempDir::new()?;
+    dir.path().set_readonly_anyhow(true)?;
+
+    let path = dir.path().join("foo").join("bar");
+    assert_error_desc_eq(
+        path.create_dir_all_anyhow(),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while processing path {:?}: Permission denied (os error 13)",
+            path.display(),
+        ),
+    );
+    Ok(())
+}
+
+#[test]
+fn hard_link_permission_error() -> anyhow::Result<()> {
+    let dir = tempfile::TempDir::new()?;
+    let path = dir.path().join("original");
+    std::fs::write(&path, b"hello world")?;
+    dir.path().set_readonly_anyhow(true)?;
+    let link = dir.path().join("link");
+    assert_error_desc_eq(
+        path.hard_link_anyhow(&link),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while hard-linking {:?} to {:?}: Permission denied (os error 13)",
+            path.display(),
+            link.display(),
+        ),
+    );
+    Ok(())
+}
+
+#[test]
+fn read_missing() -> anyhow::Result<()> {
+    let path = Path::new("/this/path/should/not/exist");
+    assert_error_desc_eq(
+        path.read_anyhow(),
+        // BUG: This error message is platform specific:
+        r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
+    );
+    Ok(())
+}
+
+#[test]
+fn read_to_string_missing() -> anyhow::Result<()> {
+    let path = Path::new("/this/path/should/not/exist");
+    assert_error_desc_eq(
+        path.read_to_string_anyhow(),
+        // BUG: This error message is platform specific:
+        r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
+    );
+    Ok(())
+}
+
+#[test]
+fn read_to_string_invalid_utf8() -> anyhow::Result<()> {
+    use std::io::Write;
+
+    let mut f = tempfile::NamedTempFile::new()?;
+    f.write_all(b"not utf8: \xf3")?;
+    f.flush()?;
+
+    assert_error_desc_eq(
+        f.path().read_to_string_anyhow(),
+        &format!(
+            "while processing path {:?}: stream did not contain valid UTF-8",
+            f.path().display()
+        ),
+    );
+    Ok(())
+}
+
+#[test]
+fn remove_dir_nonexistent() -> anyhow::Result<()> {
+    let path = Path::new("/this/path/should/not/exist");
+    assert_error_desc_eq(
+        path.remove_dir_anyhow(),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while processing path {:?}: No such file or directory (os error 2)",
+            path.display(),
+        ),
+    );
+    Ok(())
+}
+
+#[test]
+fn remove_dir_all_permission_error() -> anyhow::Result<()> {
+    let dir = tempfile::TempDir::new()?;
+    let a = dir.path().join("a");
+    let b = a.join("b");
+    let c = b.join("c");
+    c.create_dir_all_anyhow()?;
+    b.set_readonly_anyhow(true)?;
+
+    assert_error_desc_eq(
+        a.remove_dir_all_anyhow(),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while processing path {:?}: Permission denied (os error 13)",
+            a.display(),
+        ),
+    );
+    Ok(())
+}
+
+#[test]
+fn remove_file_nonexistent() -> anyhow::Result<()> {
+    let path = Path::new("/this/path/should/not/exist");
+    assert_error_desc_eq(
+        path.remove_file_anyhow(),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while processing path {:?}: No such file or directory (os error 2)",
+            path.display(),
+        ),
+    );
+    Ok(())
+}
+
+#[test]
+fn rename_permission_error() -> anyhow::Result<()> {
+    let dir = tempfile::TempDir::new()?;
+    let a = dir.path().join("a");
+    let b = dir.path().join("b");
+    a.create_dir_anyhow()?;
+    dir.path().set_readonly_anyhow(true)?;
+
+    assert_error_desc_eq(
+        a.rename_anyhow(&b),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while renaming {:?} to {:?}: Permission denied (os error 13)",
+            a.display(),
+            b.display(),
+        ),
+    );
+    Ok(())
+}
+
+#[test]
+fn write_permission_error() -> anyhow::Result<()> {
+    let dir = tempfile::TempDir::new()?;
+    dir.path().set_readonly_anyhow(true)?;
+    let path = dir.path().join("file");
+
+    assert_error_desc_eq(
+        path.write_anyhow("Hello World!"),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while writing to {:?}: Permission denied (os error 13)",
+            path.display(),
+        ),
+    );
+    Ok(())
+}
+
 fn assert_error_desc_eq<T>(res: anyhow::Result<T>, expected: &str) {
     let error = format!("{:#}", res.err().unwrap());
     assert_eq!(error, expected.trim_end());
