@@ -261,6 +261,20 @@ fn copy_to_non_existent_directory() -> anyhow::Result<()> {
 }
 
 #[test]
+fn create_dir_within_non_existent_directory() -> anyhow::Result<()> {
+    let path = Path::new("/this/path/also/should/not/exist");
+    assert_error_desc_eq(
+        path.create_dir_anyhow(),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while processing path {:?}: No such file or directory (os error 2)",
+            path.display(),
+        ),
+    );
+    Ok(())
+}
+
+#[test]
 fn read_missing() -> anyhow::Result<()> {
     let path = Path::new("/this/path/should/not/exist");
     assert_error_desc_eq(
