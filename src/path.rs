@@ -83,6 +83,11 @@ pub trait PathAnyhow {
     /// This method factors out the complexity of retrieving [std::fs::Permisisons], modifying
     /// them, and then setting them.
     fn set_readonly_anyhow(&self, readonly: bool) -> anyhow::Result<()>;
+    /// Wrap [std::fs::rename], providing `self` and `to` as error context
+
+    fn write_anyhow<C>(&self, contents: C) -> anyhow::Result<()>
+    where
+        C: AsRef<[u8]>;
 }
 
 macro_rules! wrap_nullary_option_method {
@@ -198,6 +203,14 @@ impl PathAnyhow for Path {
         std::fs::set_permissions(self, perms)
             .with_context(|| format!("with readonly permission {:?}", readonly))
             .with_context(|| format!("while processing path {:?}", self.display()))
+    }
+
+    fn write_anyhow<C>(&self, contents: C) -> anyhow::Result<()>
+    where
+        C: AsRef<[u8]>,
+    {
+        std::fs::write(self, contents)
+            .with_context(|| format!("while writing to {:?}", self.display()))
     }
 }
 

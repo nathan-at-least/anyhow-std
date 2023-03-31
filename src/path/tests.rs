@@ -418,6 +418,23 @@ fn rename_permission_error() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[test]
+fn write_permission_error() -> anyhow::Result<()> {
+    let dir = tempfile::TempDir::new()?;
+    dir.path().set_readonly_anyhow(true)?;
+    let path = dir.path().join("file");
+
+    assert_error_desc_eq(
+        path.write_anyhow("Hello World!"),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while writing to {:?}: Permission denied (os error 13)",
+            path.display(),
+        ),
+    );
+    Ok(())
+}
+
 fn assert_error_desc_eq<T>(res: anyhow::Result<T>, expected: &str) {
     let error = format!("{:#}", res.err().unwrap());
     assert_eq!(error, expected.trim_end());
