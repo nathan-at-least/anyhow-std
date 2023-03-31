@@ -275,6 +275,26 @@ fn create_dir_within_non_existent_directory() -> anyhow::Result<()> {
 }
 
 #[test]
+fn create_dir_all_permission_denied() -> anyhow::Result<()> {
+    let dir = tempfile::TempDir::new()?;
+
+    let mut perms = dir.path().metadata_anyhow()?.permissions();
+    perms.set_readonly(true);
+    std::fs::set_permissions(dir.path(), perms)?;
+
+    let path = dir.path().join("foo").join("bar");
+    assert_error_desc_eq(
+        path.create_dir_all_anyhow(),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while processing path {:?}: Permission denied (os error 13)",
+            path.display(),
+        ),
+    );
+    Ok(())
+}
+
+#[test]
 fn read_missing() -> anyhow::Result<()> {
     let path = Path::new("/this/path/should/not/exist");
     assert_error_desc_eq(

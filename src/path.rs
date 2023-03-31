@@ -50,6 +50,9 @@ pub trait PathAnyhow {
     /// Wrap [std::fs::create_dir], providing the path as error context
     fn create_dir_anyhow(&self) -> anyhow::Result<()>;
 
+    /// Wrap [std::fs::create_dir_all], providing the path as error context
+    fn create_dir_all_anyhow(&self) -> anyhow::Result<()>;
+
     /// Wrap [std::fs::read], providing the path as error context
     fn read_anyhow(&self) -> anyhow::Result<Vec<u8>>;
 
@@ -133,6 +136,7 @@ impl PathAnyhow for Path {
     }
 
     wrap_nullary_result_method!(create_dir_anyhow, std::fs::create_dir, ());
+    wrap_nullary_result_method!(create_dir_all_anyhow, std::fs::create_dir_all, ());
     wrap_nullary_result_method!(read_anyhow, std::fs::read, Vec<u8>);
     wrap_nullary_result_method!(read_to_string_anyhow, std::fs::read_to_string, String);
 }
