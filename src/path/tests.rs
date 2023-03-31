@@ -398,6 +398,26 @@ fn remove_file_nonexistent() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[test]
+fn rename_permission_error() -> anyhow::Result<()> {
+    let dir = tempfile::TempDir::new()?;
+    let a = dir.path().join("a");
+    let b = dir.path().join("b");
+    a.create_dir_anyhow()?;
+    dir.path().set_readonly_anyhow(true)?;
+
+    assert_error_desc_eq(
+        a.rename_anyhow(&b),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while renaming {:?} to {:?}: Permission denied (os error 13)",
+            a.display(),
+            b.display(),
+        ),
+    );
+    Ok(())
+}
+
 fn assert_error_desc_eq<T>(res: anyhow::Result<T>, expected: &str) {
     let error = format!("{:#}", res.err().unwrap());
     assert_eq!(error, expected.trim_end());
