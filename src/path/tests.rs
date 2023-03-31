@@ -364,6 +364,26 @@ fn remove_dir_nonexistent() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[test]
+fn remove_dir_all_permission_error() -> anyhow::Result<()> {
+    let dir = tempfile::TempDir::new()?;
+    let a = dir.path().join("a");
+    let b = a.join("b");
+    let c = b.join("c");
+    c.create_dir_all_anyhow()?;
+    b.set_readonly_anyhow(true)?;
+
+    assert_error_desc_eq(
+        a.remove_dir_all_anyhow(),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while processing path {:?}: Permission denied (os error 13)",
+            a.display(),
+        ),
+    );
+    Ok(())
+}
+
 fn assert_error_desc_eq<T>(res: anyhow::Result<T>, expected: &str) {
     let error = format!("{:#}", res.err().unwrap());
     assert_eq!(error, expected.trim_end());
