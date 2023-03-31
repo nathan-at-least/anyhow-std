@@ -277,10 +277,7 @@ fn create_dir_within_non_existent_directory() -> anyhow::Result<()> {
 #[test]
 fn create_dir_all_permission_denied() -> anyhow::Result<()> {
     let dir = tempfile::TempDir::new()?;
-
-    let mut perms = dir.path().metadata_anyhow()?.permissions();
-    perms.set_readonly(true);
-    std::fs::set_permissions(dir.path(), perms)?;
+    dir.path().set_readonly_anyhow(true)?;
 
     let path = dir.path().join("foo").join("bar");
     assert_error_desc_eq(
@@ -289,6 +286,25 @@ fn create_dir_all_permission_denied() -> anyhow::Result<()> {
         &format!(
             "while processing path {:?}: Permission denied (os error 13)",
             path.display(),
+        ),
+    );
+    Ok(())
+}
+
+#[test]
+fn hard_link_permission_error() -> anyhow::Result<()> {
+    let dir = tempfile::TempDir::new()?;
+    let path = dir.path().join("original");
+    std::fs::write(&path, b"hello world")?;
+    dir.path().set_readonly_anyhow(true)?;
+    let link = dir.path().join("link");
+    assert_error_desc_eq(
+        path.hard_link_anyhow(&link),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while hard-linking {:?} to {:?}: Permission denied (os error 13)",
+            path.display(),
+            link.display(),
         ),
     );
     Ok(())

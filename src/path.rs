@@ -53,11 +53,22 @@ pub trait PathAnyhow {
     /// Wrap [std::fs::create_dir_all], providing the path as error context
     fn create_dir_all_anyhow(&self) -> anyhow::Result<()>;
 
+    /// Wrap [std::fs::hard_link], providing `self` and `link` as error context
+    fn hard_link_anyhow<P>(&self, link: P) -> anyhow::Result<()>
+    where
+        P: AsRef<Path>;
+
     /// Wrap [std::fs::read], providing the path as error context
     fn read_anyhow(&self) -> anyhow::Result<Vec<u8>>;
 
     /// Wrap [std::fs::read_to_string], providing the path as error context
     fn read_to_string_anyhow(&self) -> anyhow::Result<String>;
+
+    /// Wrap [std::fs::set_permissions], providing the path as error context
+    ///
+    /// This method factors out the complexity of retrieving [std::fs::Permisisons], modifying
+    /// them, and then setting them.
+    fn set_readonly_anyhow(&self, readonly: bool) -> anyhow::Result<()>;
 }
 
 macro_rules! wrap_nullary_option_method {
@@ -137,8 +148,31 @@ impl PathAnyhow for Path {
 
     wrap_nullary_result_method!(create_dir_anyhow, std::fs::create_dir, ());
     wrap_nullary_result_method!(create_dir_all_anyhow, std::fs::create_dir_all, ());
+
+    fn hard_link_anyhow<P>(&self, link: P) -> anyhow::Result<()>
+    where
+        P: AsRef<Path>,
+    {
+        let link = link.as_ref();
+        std::fs::hard_link(self, link).with_context(|| {
+            format!(
+                "while hard-linking {:?} to {:?}",
+                self.display(),
+                link.display()
+            )
+        })
+    }
+
     wrap_nullary_result_method!(read_anyhow, std::fs::read, Vec<u8>);
     wrap_nullary_result_method!(read_to_string_anyhow, std::fs::read_to_string, String);
+
+    fn set_readonly_anyhow(&self, readonly: bool) -> anyhow::Result<()> {
+        let mut perms = self.metadata_anyhow()?.permissions();
+        perms.set_readonly(true);
+        std::fs::set_permissions(self, perms)
+            .with_context(|| format!("with readonly permission {:?}", readonly))
+            .with_context(|| format!("while processing path {:?}", self.display()))
+    }
 }
 
 #[cfg(test)]
