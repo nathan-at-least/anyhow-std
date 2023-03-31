@@ -228,6 +228,46 @@ fn read_dir_missing() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[test]
+fn read_missing() -> anyhow::Result<()> {
+    let path = Path::new("/this/path/should/not/exist");
+    assert_error_desc_eq(
+        path.read_anyhow(),
+        // BUG: This error message is platform specific:
+        r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
+    );
+    Ok(())
+}
+
+#[test]
+fn read_to_string_missing() -> anyhow::Result<()> {
+    let path = Path::new("/this/path/should/not/exist");
+    assert_error_desc_eq(
+        path.read_to_string_anyhow(),
+        // BUG: This error message is platform specific:
+        r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
+    );
+    Ok(())
+}
+
+#[test]
+fn read_to_string_invalid_utf8() -> anyhow::Result<()> {
+    use std::io::Write;
+
+    let mut f = tempfile::NamedTempFile::new()?;
+    f.write_all(b"not utf8: \xf3")?;
+    f.flush()?;
+
+    assert_error_desc_eq(
+        f.path().read_to_string_anyhow(),
+        &format!(
+            "while processing path {:?}: stream did not contain valid UTF-8",
+            f.path().display()
+        ),
+    );
+    Ok(())
+}
+
 fn assert_error_desc_eq<T>(res: anyhow::Result<T>, expected: &str) {
     let error = format!("{:#}", res.err().unwrap());
     assert_eq!(error, expected.trim_end());
