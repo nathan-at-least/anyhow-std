@@ -64,6 +64,9 @@ pub trait PathAnyhow {
     /// Wrap [std::fs::read_to_string], providing the path as error context
     fn read_to_string_anyhow(&self) -> anyhow::Result<String>;
 
+    /// Wrap [std::fs::remove_dir], providing the path as error context
+    fn remove_dir_anyhow(&self) -> anyhow::Result<()>;
+
     /// Wrap [std::fs::set_permissions], providing the path as error context
     ///
     /// This method factors out the complexity of retrieving [std::fs::Permisisons], modifying
@@ -165,6 +168,7 @@ impl PathAnyhow for Path {
 
     wrap_nullary_result_method!(read_anyhow, std::fs::read, Vec<u8>);
     wrap_nullary_result_method!(read_to_string_anyhow, std::fs::read_to_string, String);
+    wrap_nullary_result_method!(remove_dir_anyhow, std::fs::remove_dir, ());
 
     fn set_readonly_anyhow(&self, readonly: bool) -> anyhow::Result<()> {
         let mut perms = self.metadata_anyhow()?.permissions();

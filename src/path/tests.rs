@@ -350,6 +350,20 @@ fn read_to_string_invalid_utf8() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[test]
+fn remove_dir_nonexistent() -> anyhow::Result<()> {
+    let path = Path::new("/this/path/should/not/exist");
+    assert_error_desc_eq(
+        path.remove_dir_anyhow(),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while processing path {:?}: No such file or directory (os error 2)",
+            path.display(),
+        ),
+    );
+    Ok(())
+}
+
 fn assert_error_desc_eq<T>(res: anyhow::Result<T>, expected: &str) {
     let error = format!("{:#}", res.err().unwrap());
     assert_eq!(error, expected.trim_end());
