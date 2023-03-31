@@ -229,6 +229,38 @@ fn read_dir_missing() -> anyhow::Result<()> {
 }
 
 #[test]
+fn copy_from_missing() -> anyhow::Result<()> {
+    let from = Path::new("/this/path/should/not/exist");
+    let to = Path::new("/this/path/also/should/not/exist");
+    assert_error_desc_eq(
+        from.copy_anyhow(to),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while copying {:?} to {:?}: No such file or directory (os error 2)",
+            from.display(),
+            to.display()
+        ),
+    );
+    Ok(())
+}
+
+#[test]
+fn copy_to_non_existent_directory() -> anyhow::Result<()> {
+    let from = tempfile::NamedTempFile::new()?;
+    let to = Path::new("/this/path/also/should/not/exist");
+    assert_error_desc_eq(
+        from.path().copy_anyhow(to),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while copying {:?} to {:?}: No such file or directory (os error 2)",
+            from.path().display(),
+            to.display(),
+        ),
+    );
+    Ok(())
+}
+
+#[test]
 fn read_missing() -> anyhow::Result<()> {
     let path = Path::new("/this/path/should/not/exist");
     assert_error_desc_eq(

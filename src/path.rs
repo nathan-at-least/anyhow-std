@@ -40,6 +40,13 @@ pub trait PathAnyhow {
     /// Wrap [Path::read_dir], providing the path as error context
     fn read_dir_anyhow(&self) -> anyhow::Result<ReadDir>;
 
+    // Wrappers for std::fs:
+
+    /// Wrap [std::fs::copy] from `self` to `to`, providing `self` and `to` as error context
+    fn copy_anyhow<P>(&self, to: P) -> anyhow::Result<u64>
+    where
+        P: AsRef<Path>;
+
     /// Wrap [std::fs::read], providing the path as error context
     fn read_anyhow(&self) -> anyhow::Result<Vec<u8>>;
 
@@ -112,6 +119,16 @@ impl PathAnyhow for Path {
     wrap_nullary_result_method!(canonicalize_anyhow, Path::canonicalize, PathBuf);
     wrap_nullary_result_method!(read_link_anyhow, Path::read_link, PathBuf);
     wrap_nullary_result_method!(read_dir_anyhow, Path::read_dir, ReadDir);
+
+    fn copy_anyhow<P>(&self, to: P) -> anyhow::Result<u64>
+    where
+        P: AsRef<Path>,
+    {
+        let to = to.as_ref();
+        std::fs::copy(self, to)
+            .with_context(|| format!("while copying {:?} to {:?}", self.display(), to.display()))
+    }
+
     wrap_nullary_result_method!(read_anyhow, std::fs::read, Vec<u8>);
     wrap_nullary_result_method!(read_to_string_anyhow, std::fs::read_to_string, String);
 }
