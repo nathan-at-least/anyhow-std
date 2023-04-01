@@ -1,196 +1,146 @@
 // BUGS: Many tests use unix-specific paths, primarily by assuming "/" exists as a directory.
 
-use crate::PathAnyhow;
+use crate::{OsStrAnyhow, PathAnyhow};
+use std::ffi::OsStr;
 use std::path::Path;
+use test_case::test_case;
 
-#[test]
-fn to_str_utf8() -> anyhow::Result<()> {
-    let path = Path::new("/foo/bar.txt");
-    assert_eq!("/foo/bar.txt", path.to_str_anyhow()?);
-    Ok(())
-}
-
+#[test_case("/foo/bar.txt" => Ok("/foo/bar.txt") ; "ok")]
 #[cfg(target_family = "unix")]
-#[test]
-fn to_str_invalid_utf8() -> anyhow::Result<()> {
-    use std::ffi::OsStr;
-    use std::os::unix::ffi::OsStrExt;
+#[test_case(
+    {
+        use std::os::unix::ffi::OsStrExt;
 
-    let path = Path::new(OsStr::from_bytes(b"\x81\xff"));
-    assert_error_desc_eq(
-        path.to_str_anyhow(),
-        r#"while processing path "\x81\xFF": invalid UTF8"#,
-    );
-    Ok(())
+        OsStr::from_bytes(b"\x81\xff")
+    }
+    => err_str(r#"while processing path "\x81\xFF": invalid UTF8"#)
+    ; "invalid utf8"
+)]
+fn to_str<S>(input: &S) -> Result<&str, String>
+where
+    S: AsRef<OsStr> + ?Sized,
+{
+    stringify_error(Path::new(input).to_str_anyhow())
 }
 
-#[test]
-fn parent_non_root() -> anyhow::Result<()> {
-    let path = Path::new("/foo/bar.txt");
-    let expected = Path::new("/foo/");
-    assert_eq!(expected, path.parent_anyhow()?);
-    Ok(())
+#[test_case("/foo/bar.txt" => Ok(Path::new("/foo/")); "ok")]
+#[test_case("/" => err_str(r#"while processing path "/": expected parent directory"#); "root")]
+fn parent(input: &str) -> Result<&Path, String> {
+    stringify_error(Path::new(input).parent_anyhow())
 }
 
-#[test]
-fn parent_root() -> anyhow::Result<()> {
-    let path = Path::new("/");
-    assert_error_desc_eq(
-        path.parent_anyhow(),
-        r#"while processing path "/": expected parent directory"#,
-    );
-    Ok(())
+#[test_case("/foo/bar.txt" => Ok("bar.txt"); "ok")]
+#[test_case("/foo/.." => err_str(r#"while processing path "/foo/..": missing expected filename"#); "dot-dot")]
+fn file_name(input: &str) -> Result<&str, String> {
+    stringify_error(
+        Path::new(input)
+            .file_name_anyhow()
+            .and_then(|s| s.to_str_anyhow()),
+    )
 }
 
-#[test]
-fn file_name_present() -> anyhow::Result<()> {
-    let path = Path::new("/foo/bar.txt");
-    assert_eq!("bar.txt", path.file_name_anyhow()?);
-    Ok(())
-}
-
-#[test]
-fn file_name_missing() -> anyhow::Result<()> {
-    let path = Path::new("/foo/..");
-    assert_error_desc_eq(
-        path.file_name_anyhow(),
-        r#"while processing path "/foo/..": missing expected filename"#,
-    );
-    Ok(())
-}
-
-#[test]
-fn strip_prefix_ok() -> anyhow::Result<()> {
-    let path = Path::new("/foo/bar/quz.txt");
-    let expected = Path::new("bar/quz.txt");
-    assert_eq!(expected, path.strip_prefix_anyhow("/foo")?);
-    Ok(())
-}
-
-#[test]
-fn strip_prefix_err() -> anyhow::Result<()> {
-    let path = Path::new("/foo/bar/quz.txt");
-    assert_error_desc_eq(
-        path.strip_prefix_anyhow("/bananas"),
+#[test_case("/foo/bar/quz.txt", "/foo" => Ok("bar/quz.txt"); "ok")]
+#[test_case(
+    "/foo/bar/quz.txt",
+    "/bananas"
+    => err_str(
         r#"while processing path "/foo/bar/quz.txt": with prefix "/bananas": prefix not found"#,
-    );
-    Ok(())
+    )
+    ; "err"
+)]
+fn strip_prefix<'a>(path: &'a str, prefix: &str) -> Result<&'a str, String> {
+    stringify_error(
+        Path::new(path)
+            .strip_prefix_anyhow(prefix)
+            .and_then(|p| p.to_str_anyhow()),
+    )
 }
 
-#[test]
-fn file_stem_present() -> anyhow::Result<()> {
-    let path = Path::new("/foo/bar.txt");
-    assert_eq!("bar", path.file_stem_anyhow()?);
-    Ok(())
-}
-
-#[test]
-fn file_stem_missing() -> anyhow::Result<()> {
-    let path = Path::new("/foo/bar");
-    assert_eq!("bar", path.file_stem_anyhow()?);
-    Ok(())
-}
-
-#[test]
-fn file_stem_without_name() -> anyhow::Result<()> {
-    let path = Path::new("/foo/..");
-    assert_error_desc_eq(
-        path.file_stem_anyhow(),
+#[test_case("/foo/bar.txt" => Ok("bar"); "ok present")]
+#[test_case("/foo/bar" => Ok("bar"); "ok absent")]
+#[test_case(
+    "/foo/.."
+    => err_str(
         r#"while processing path "/foo/..": missing expected filename"#,
     );
-    Ok(())
+    "err missing filename"
+)]
+fn file_stem(input: &str) -> Result<&str, String> {
+    stringify_error(
+        Path::new(input)
+            .file_stem_anyhow()
+            .and_then(|p| p.to_str_anyhow()),
+    )
 }
 
-#[test]
-fn extension_ok() -> anyhow::Result<()> {
-    let path = Path::new("/foo/bar.txt");
-    assert_eq!("txt", path.extension_anyhow()?);
-    Ok(())
-}
-
-#[test]
-fn extension_missing_filename() -> anyhow::Result<()> {
-    let path = Path::new("/foo/..");
-    assert_error_desc_eq(
-        path.extension_anyhow(),
+#[test_case("/foo/bar.txt" => Ok("txt"); "ok")]
+#[test_case(
+    "/foo/.."
+    => err_str(
         r#"while processing path "/foo/..": missing expected extension"#,
     );
-    Ok(())
-}
-
-#[test]
-fn extension_missing_extension() -> anyhow::Result<()> {
-    let path = Path::new("/foo/bar");
-    assert_error_desc_eq(
-        path.extension_anyhow(),
+    "err missing filename"
+)]
+#[test_case(
+    "/foo/bar"
+    => err_str(
         r#"while processing path "/foo/bar": missing expected extension"#,
     );
-    Ok(())
-}
-
-#[test]
-fn extension_of_dot_file() -> anyhow::Result<()> {
-    let path = Path::new("/foo/.bar");
-    assert_error_desc_eq(
-        path.extension_anyhow(),
+    "err missing extension"
+)]
+#[test_case(
+    "/foo/.bar"
+    => err_str(
         r#"while processing path "/foo/.bar": missing expected extension"#,
     );
-    Ok(())
+    "err dotfile missing extension"
+)]
+fn extension(input: &str) -> Result<&str, String> {
+    stringify_error(
+        Path::new(input)
+            .extension_anyhow()
+            .and_then(|p| p.to_str_anyhow()),
+    )
 }
 
-#[test]
-fn metadata_ok() -> anyhow::Result<()> {
-    let path = Path::new("/");
-    assert!(path.metadata_anyhow().is_ok());
-    Ok(())
-}
-
-#[test]
-fn metadata_missing() -> anyhow::Result<()> {
-    let path = Path::new("/this/path/should/not/exist");
-    assert_error_desc_eq(
-        path.metadata_anyhow(),
-        // BUG: This error message is platform specific:
+#[test_case("/" => Ok(()); "ok root")]
+#[test_case(
+    "/this/path/should/not/exist"
+    => err_str(
         r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
     );
-    Ok(())
+    "err missing"
+)]
+fn metadata(input: &str) -> Result<(), String> {
+    stringify_error(Path::new(input).metadata_anyhow().map(|_| ()))
 }
 
-#[test]
-fn symlink_metadata_ok() -> anyhow::Result<()> {
-    let path = Path::new("/");
-    assert!(path.symlink_metadata_anyhow().ok().is_some());
-    Ok(())
-}
-
-#[test]
-fn symlink_metadata_missing() -> anyhow::Result<()> {
-    let path = Path::new("/this/path/should/not/exist");
-    assert_error_desc_eq(
-        path.symlink_metadata_anyhow(),
-        // BUG: This error message is platform specific:
+#[test_case("/" => Ok(()); "ok root")]
+#[test_case(
+    "/this/path/should/not/exist"
+    => err_str(
         r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
     );
-    Ok(())
+    "err missing"
+)]
+fn symlink_metadata(input: &str) -> Result<(), String> {
+    stringify_error(Path::new(input).symlink_metadata_anyhow().map(|_| ()))
 }
 
-#[test]
-fn canonicalize_ok() -> anyhow::Result<()> {
-    // BUG: Platform specific: on some platforms "/.." may not exist.
-    let path = Path::new("/..");
-    assert_eq!(Path::new("/"), path.canonicalize_anyhow()?);
-    Ok(())
-}
-
-#[test]
-fn canonicalize_missing() -> anyhow::Result<()> {
-    let path = Path::new("/this/path/should/not/exist");
-    assert_error_desc_eq(
-        path.canonicalize_anyhow(),
-        // BUG: This error message is platform specific:
+#[test_case("/.." => Ok("/".to_string()))]
+#[test_case(
+    "/this/path/should/not/exist"
+    => err_str(
         r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
     );
-    Ok(())
+    "err missing"
+)]
+fn canonicalize(input: &str) -> Result<String, String> {
+    stringify_error(
+        Path::new(input)
+            .canonicalize_anyhow()
+            .and_then(|p| p.to_str_anyhow().map(String::from)),
+    )
 }
 
 #[ignore]
@@ -199,65 +149,65 @@ fn read_link_ok() -> anyhow::Result<()> {
     todo!(); // We need to create a symbolic link then test the target method.
 }
 
-#[test]
-fn read_link_missing() -> anyhow::Result<()> {
-    let path = Path::new("/this/path/should/not/exist");
-    assert_error_desc_eq(
-        path.read_link_anyhow(),
-        // BUG: This error message is platform specific:
+#[test_case(
+    "/this/path/should/not/exist"
+    => err_str(
         r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
     );
-    Ok(())
+    "err missing"
+)]
+fn read_link(input: &str) -> Result<String, String> {
+    stringify_error(
+        Path::new(input)
+            .read_link_anyhow()
+            .and_then(|p| p.to_str_anyhow().map(String::from)),
+    )
 }
 
-#[test]
-fn read_dir_ok() -> anyhow::Result<()> {
-    let path = Path::new("/");
-    assert!(path.read_dir_anyhow().is_ok());
-    Ok(())
-}
-
-#[test]
-fn read_dir_missing() -> anyhow::Result<()> {
-    let path = Path::new("/this/path/should/not/exist");
-    assert_error_desc_eq(
-        path.read_dir_anyhow(),
-        // BUG: This error message is platform specific:
+#[test_case("/" => Ok(()); "ok")]
+#[test_case(
+    "/this/path/should/not/exist"
+    => err_str(
         r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
     );
-    Ok(())
+    "err missing"
+)]
+fn read_dir(input: &str) -> Result<(), String> {
+    stringify_error(Path::new(input).read_dir_anyhow().map(|_| ()))
 }
 
-#[test]
-fn copy_from_missing() -> anyhow::Result<()> {
-    let from = Path::new("/this/path/should/not/exist");
-    let to = Path::new("/this/path/also/should/not/exist");
-    assert_error_desc_eq(
-        from.copy_anyhow(to),
-        // BUG: This error message is platform specific:
-        &format!(
-            "while copying {:?} to {:?}: No such file or directory (os error 2)",
-            from.display(),
-            to.display()
-        ),
+#[test_case(
+    "/this/path/should/not/exist",
+    Path::new,
+    "/this/path/also/should/not/exist",
+    |p| format!(
+        "while copying {:?} to \"/this/path/also/should/not/exist\": No such file or directory (os error 2)",
+        p.display(),
     );
-    Ok(())
-}
+    "err non-existing to non-existing"
+)]
+#[test_case(
+    tempfile::NamedTempFile::new().unwrap(),
+    |nft| nft.path(),
+    "/this/path/also/should/not/exist",
+    |p| format!(
+        "while copying {:?} to \"/this/path/also/should/not/exist\": No such file or directory (os error 2)",
+        p.display(),
+    );
+    "err existing to non-existing"
+)]
+fn copy<T, IP, FMT>(input: T, into_path: IP, to: &str, fmt: FMT)
+where
+    IP: FnOnce(&T) -> &Path,
+    FMT: FnOnce(&Path) -> String,
+{
+    let from = into_path(&input);
+    let expected = fmt(from);
 
-#[test]
-fn copy_to_non_existent_directory() -> anyhow::Result<()> {
-    let from = tempfile::NamedTempFile::new()?;
-    let to = Path::new("/this/path/also/should/not/exist");
-    assert_error_desc_eq(
-        from.path().copy_anyhow(to),
-        // BUG: This error message is platform specific:
-        &format!(
-            "while copying {:?} to {:?}: No such file or directory (os error 2)",
-            from.path().display(),
-            to.display(),
-        ),
-    );
-    Ok(())
+    let errstr = stringify_error(Path::new(from).copy_anyhow(to).map(|_| ()))
+        .err()
+        .unwrap();
+    assert_eq!(expected, errstr,);
 }
 
 #[test]
@@ -438,4 +388,12 @@ fn write_permission_error() -> anyhow::Result<()> {
 fn assert_error_desc_eq<T>(res: anyhow::Result<T>, expected: &str) {
     let error = format!("{:#}", res.err().unwrap());
     assert_eq!(error, expected.trim_end());
+}
+
+fn err_str<T>(s: &str) -> Result<T, String> {
+    Err(s.to_string())
+}
+
+fn stringify_error<T>(res: anyhow::Result<T>) -> Result<T, String> {
+    res.map_err(|e| format!("{:#}", e))
 }
