@@ -210,94 +210,110 @@ where
     assert_eq!(expected, errstr,);
 }
 
-#[test]
-fn create_dir_within_non_existent_directory() -> anyhow::Result<()> {
-    let path = Path::new("/this/path/also/should/not/exist");
-    assert_error_desc_eq(
-        path.create_dir_anyhow(),
-        // BUG: This error message is platform specific:
-        &format!(
-            "while processing path {:?}: No such file or directory (os error 2)",
-            path.display(),
-        ),
-    );
-    Ok(())
+#[test_case(
+    "/this/path/also/should/not/exist"
+    => err_str(
+        r#"while processing path "/this/path/also/should/not/exist": No such file or directory (os error 2)"#,
+    )
+    ; "err within non-existing dir"
+)]
+fn create_dir(input: &str) -> Result<(), String> {
+    stringify_error(Path::new(input).create_dir_anyhow())
 }
 
-#[test]
-fn create_dir_all_permission_denied() -> anyhow::Result<()> {
-    let dir = tempfile::TempDir::new()?;
-    dir.path().set_readonly_anyhow(true)?;
+mod create_dir_all {
+    use super::*;
 
-    let path = dir.path().join("foo").join("bar");
-    assert_error_desc_eq(
-        path.create_dir_all_anyhow(),
-        // BUG: This error message is platform specific:
-        &format!(
-            "while processing path {:?}: Permission denied (os error 13)",
-            path.display(),
-        ),
-    );
-    Ok(())
+    #[test]
+    fn permission_denied() -> anyhow::Result<()> {
+        let dir = tempfile::TempDir::new()?;
+        dir.path().set_readonly_anyhow(true)?;
+
+        let path = dir.path().join("foo").join("bar");
+        assert_error_desc_eq(
+            path.create_dir_all_anyhow(),
+            // BUG: This error message is platform specific:
+            &format!(
+                "while processing path {:?}: Permission denied (os error 13)",
+                path.display(),
+            ),
+        );
+        Ok(())
+    }
 }
 
-#[test]
-fn hard_link_permission_error() -> anyhow::Result<()> {
-    let dir = tempfile::TempDir::new()?;
-    let path = dir.path().join("original");
-    std::fs::write(&path, b"hello world")?;
-    dir.path().set_readonly_anyhow(true)?;
-    let link = dir.path().join("link");
-    assert_error_desc_eq(
-        path.hard_link_anyhow(&link),
-        // BUG: This error message is platform specific:
-        &format!(
-            "while hard-linking {:?} to {:?}: Permission denied (os error 13)",
-            path.display(),
-            link.display(),
-        ),
-    );
-    Ok(())
+mod hard_link {
+    use super::*;
+
+    #[test]
+    fn permission_error() -> anyhow::Result<()> {
+        let dir = tempfile::TempDir::new()?;
+        let path = dir.path().join("original");
+        std::fs::write(&path, b"hello world")?;
+        dir.path().set_readonly_anyhow(true)?;
+        let link = dir.path().join("link");
+        assert_error_desc_eq(
+            path.hard_link_anyhow(&link),
+            // BUG: This error message is platform specific:
+            &format!(
+                "while hard-linking {:?} to {:?}: Permission denied (os error 13)",
+                path.display(),
+                link.display(),
+            ),
+        );
+        Ok(())
+    }
 }
 
-#[test]
-fn read_missing() -> anyhow::Result<()> {
-    let path = Path::new("/this/path/should/not/exist");
-    assert_error_desc_eq(
-        path.read_anyhow(),
-        // BUG: This error message is platform specific:
-        r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
-    );
-    Ok(())
+mod read {
+    use super::*;
+
+    #[test]
+    fn missing() -> anyhow::Result<()> {
+        let path = Path::new("/this/path/should/not/exist");
+        assert_error_desc_eq(
+            path.read_anyhow(),
+            // BUG: This error message is platform specific:
+            r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
+        );
+        Ok(())
+    }
 }
 
-#[test]
-fn read_to_string_missing() -> anyhow::Result<()> {
-    let path = Path::new("/this/path/should/not/exist");
-    assert_error_desc_eq(
-        path.read_to_string_anyhow(),
-        // BUG: This error message is platform specific:
-        r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
-    );
-    Ok(())
-}
+#[test_case(
+    "/this/path/should/not/exist",
+    Path::new,
+    |pdisp| format!(
+        "while processing path {pdisp:?}: No such file or directory (os error 2)",
+    )
+    ; "err missing"
+)]
+#[test_case(
+    {
+        use std::io::Write;
 
-#[test]
-fn read_to_string_invalid_utf8() -> anyhow::Result<()> {
-    use std::io::Write;
-
-    let mut f = tempfile::NamedTempFile::new()?;
-    f.write_all(b"not utf8: \xf3")?;
-    f.flush()?;
-
-    assert_error_desc_eq(
-        f.path().read_to_string_anyhow(),
-        &format!(
-            "while processing path {:?}: stream did not contain valid UTF-8",
-            f.path().display()
-        ),
-    );
-    Ok(())
+        let mut f = tempfile::NamedTempFile::new().unwrap();
+        f.write_all(b"not utf8: \xf3").unwrap();
+        f.flush().unwrap();
+        f
+    },
+    |f| f.path(),
+    |pdisp| format!(
+        "while processing path {pdisp:?}: stream did not contain valid UTF-8",
+    )
+    ; "err invalid utf8"
+)]
+fn read_to_string<T, TP, FMT>(input: T, path_of: TP, fmt: FMT)
+where
+    TP: Fn(&T) -> &Path,
+    FMT: FnOnce(std::path::Display<'_>) -> String,
+{
+    let path = path_of(&input);
+    let expected = fmt(path.display());
+    let errdesc = stringify_error(path.read_to_string_anyhow().map(|_| ()))
+        .err()
+        .unwrap();
+    assert_eq!(expected, errdesc);
 }
 
 #[test]
