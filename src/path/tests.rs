@@ -181,7 +181,7 @@ fn read_dir(input: &str) -> Result<(), String> {
     Path::new,
     "/this/path/also/should/not/exist",
     |p| format!(
-        "while copying {:?} to \"/this/path/also/should/not/exist\": No such file or directory (os error 2)",
+        "while processing path {:?}: with copy_to \"/this/path/also/should/not/exist\": No such file or directory (os error 2)",
         p.display(),
     );
     "err non-existing to non-existing"
@@ -191,7 +191,7 @@ fn read_dir(input: &str) -> Result<(), String> {
     |nft| nft.path(),
     "/this/path/also/should/not/exist",
     |p| format!(
-        "while copying {:?} to \"/this/path/also/should/not/exist\": No such file or directory (os error 2)",
+        "while processing path {:?}: with copy_to \"/this/path/also/should/not/exist\": No such file or directory (os error 2)",
         p.display(),
     );
     "err existing to non-existing"
@@ -249,7 +249,7 @@ fn hard_link((): ()) -> anyhow::Result<()> {
         path.hard_link_anyhow(&link),
         // BUG: This error message is platform specific:
         &format!(
-            "while hard-linking {:?} to {:?}: Permission denied (os error 13)",
+            "while processing path {:?}: with link_to {:?}: Permission denied (os error 13)",
             path.display(),
             link.display(),
         ),
@@ -358,7 +358,7 @@ fn rename((): ()) -> anyhow::Result<()> {
         a.rename_anyhow(&b),
         // BUG: This error message is platform specific:
         &format!(
-            "while renaming {:?} to {:?}: Permission denied (os error 13)",
+            "while processing path {:?}: with rename_to {:?}: Permission denied (os error 13)",
             a.display(),
             b.display(),
         ),
