@@ -221,63 +221,51 @@ fn create_dir(input: &str) -> Result<(), String> {
     stringify_error(Path::new(input).create_dir_anyhow())
 }
 
-mod create_dir_all {
-    use super::*;
+#[test_case((); "permission denied")]
+fn create_dir_all((): ()) -> anyhow::Result<()> {
+    let dir = tempfile::TempDir::new()?;
+    dir.path().set_readonly_anyhow(true)?;
 
-    #[test]
-    fn permission_denied() -> anyhow::Result<()> {
-        let dir = tempfile::TempDir::new()?;
-        dir.path().set_readonly_anyhow(true)?;
-
-        let path = dir.path().join("foo").join("bar");
-        assert_error_desc_eq(
-            path.create_dir_all_anyhow(),
-            // BUG: This error message is platform specific:
-            &format!(
-                "while processing path {:?}: Permission denied (os error 13)",
-                path.display(),
-            ),
-        );
-        Ok(())
-    }
+    let path = dir.path().join("foo").join("bar");
+    assert_error_desc_eq(
+        path.create_dir_all_anyhow(),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while processing path {:?}: Permission denied (os error 13)",
+            path.display(),
+        ),
+    );
+    Ok(())
 }
 
-mod hard_link {
-    use super::*;
-
-    #[test]
-    fn permission_error() -> anyhow::Result<()> {
-        let dir = tempfile::TempDir::new()?;
-        let path = dir.path().join("original");
-        std::fs::write(&path, b"hello world")?;
-        dir.path().set_readonly_anyhow(true)?;
-        let link = dir.path().join("link");
-        assert_error_desc_eq(
-            path.hard_link_anyhow(&link),
-            // BUG: This error message is platform specific:
-            &format!(
-                "while hard-linking {:?} to {:?}: Permission denied (os error 13)",
-                path.display(),
-                link.display(),
-            ),
-        );
-        Ok(())
-    }
+#[test_case((); "permission denied")]
+fn hard_link((): ()) -> anyhow::Result<()> {
+    let dir = tempfile::TempDir::new()?;
+    let path = dir.path().join("original");
+    std::fs::write(&path, b"hello world")?;
+    dir.path().set_readonly_anyhow(true)?;
+    let link = dir.path().join("link");
+    assert_error_desc_eq(
+        path.hard_link_anyhow(&link),
+        // BUG: This error message is platform specific:
+        &format!(
+            "while hard-linking {:?} to {:?}: Permission denied (os error 13)",
+            path.display(),
+            link.display(),
+        ),
+    );
+    Ok(())
 }
 
-mod read {
-    use super::*;
-
-    #[test]
-    fn missing() -> anyhow::Result<()> {
-        let path = Path::new("/this/path/should/not/exist");
-        assert_error_desc_eq(
-            path.read_anyhow(),
-            // BUG: This error message is platform specific:
-            r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
-        );
-        Ok(())
-    }
+#[test_case(
+    "/this/path/should/not/exist"
+    => err_str(
+        r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
+    )
+    ; "missing"
+)]
+fn read(input: &str) -> Result<(), String> {
+    stringify_error(Path::new(input).read_anyhow().map(|_| ()))
 }
 
 #[test_case(
@@ -316,22 +304,19 @@ where
     assert_eq!(expected, errdesc);
 }
 
-#[test]
-fn remove_dir_nonexistent() -> anyhow::Result<()> {
-    let path = Path::new("/this/path/should/not/exist");
-    assert_error_desc_eq(
-        path.remove_dir_anyhow(),
-        // BUG: This error message is platform specific:
-        &format!(
-            "while processing path {:?}: No such file or directory (os error 2)",
-            path.display(),
-        ),
-    );
-    Ok(())
+#[test_case(
+    "/this/path/should/not/exist"
+    => err_str(
+        r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
+    )
+    ; "err non-existent"
+)]
+fn remove_dir(input: &str) -> Result<(), String> {
+    stringify_error(Path::new(input).remove_dir_anyhow())
 }
 
-#[test]
-fn remove_dir_all_permission_error() -> anyhow::Result<()> {
+#[test_case((); "permission error")]
+fn remove_dir_all((): ()) -> anyhow::Result<()> {
     let dir = tempfile::TempDir::new()?;
     let a = dir.path().join("a");
     let b = a.join("b");
@@ -350,22 +335,19 @@ fn remove_dir_all_permission_error() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[test]
-fn remove_file_nonexistent() -> anyhow::Result<()> {
-    let path = Path::new("/this/path/should/not/exist");
-    assert_error_desc_eq(
-        path.remove_file_anyhow(),
-        // BUG: This error message is platform specific:
-        &format!(
-            "while processing path {:?}: No such file or directory (os error 2)",
-            path.display(),
-        ),
-    );
-    Ok(())
+#[test_case(
+    "/this/path/should/not/exist"
+    => err_str(
+        r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
+    )
+    ; "non-existent"
+)]
+fn remove_file(input: &str) -> Result<(), String> {
+    stringify_error(Path::new(input).remove_file_anyhow())
 }
 
-#[test]
-fn rename_permission_error() -> anyhow::Result<()> {
+#[test_case((); "permission denied")]
+fn rename((): ()) -> anyhow::Result<()> {
     let dir = tempfile::TempDir::new()?;
     let a = dir.path().join("a");
     let b = dir.path().join("b");
@@ -384,8 +366,8 @@ fn rename_permission_error() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[test]
-fn write_permission_error() -> anyhow::Result<()> {
+#[test_case((); "permission denied")]
+fn write((): ()) -> anyhow::Result<()> {
     let dir = tempfile::TempDir::new()?;
     dir.path().set_readonly_anyhow(true)?;
     let path = dir.path().join("file");
