@@ -90,8 +90,8 @@ pub trait PathAnyhow {
         C: AsRef<[u8]>;
 }
 
-macro_rules! wrap_nullary_option_method {
-    ( $method:ident, $cb:expr, $ret:ty, $errordesc:expr ) => {
+macro_rules! wrap_method {
+    ( $method:ident, $cb:expr, $ret:ty, None: $errordesc:expr ) => {
         fn $method(&self) -> anyhow::Result<$ret> {
             let p = self.as_ref();
             $cb(p)
@@ -99,103 +99,79 @@ macro_rules! wrap_nullary_option_method {
                 .with_context(|| format!("while processing path {:?}", p.display()))
         }
     };
-}
 
-macro_rules! wrap_nullary_result_method {
     ( $method:ident, $cb:expr, $ret:ty ) => {
         fn $method(&self) -> anyhow::Result<$ret> {
             $cb(self).with_context(|| format!("while processing path {:?}", self.display()))
         }
     };
+
+    ( $method:ident, $cb:expr, AsRefPath: $arg:ident, $ret:ty ) => {
+        fn $method<Q>(&self, $arg: Q) -> anyhow::Result<$ret>
+        where
+            Q: AsRef<Path>,
+        {
+            let argref = $arg.as_ref();
+            $cb(self, argref)
+                .with_context(|| format!("with {} {:?}", stringify!($arg), argref.display()))
+                .with_context(|| format!("while processing path {:?}", self.display()))
+        }
+    };
 }
 
 impl PathAnyhow for Path {
-    wrap_nullary_option_method!(to_str_anyhow, Path::to_str, &str, "invalid UTF8");
+    wrap_method!(to_str_anyhow, Path::to_str, &str, None: "invalid UTF8");
 
-    wrap_nullary_option_method!(
+    wrap_method!(
         parent_anyhow,
         Path::parent,
         &Path,
-        "expected parent directory"
+        None: "expected parent directory"
     );
 
-    wrap_nullary_option_method!(
+    wrap_method!(
         file_name_anyhow,
         Path::file_name,
         &OsStr,
-        "missing expected filename"
+        None: "missing expected filename"
     );
 
-    fn strip_prefix_anyhow<Q>(&self, base: Q) -> anyhow::Result<&Path>
-    where
-        Q: AsRef<Path>,
-    {
-        let bref = base.as_ref();
-        self.strip_prefix(bref)
-            .with_context(|| format!("with prefix {:?}", bref.display()))
-            .with_context(|| format!("while processing path {:?}", self.display()))
-    }
+    wrap_method!(
+        strip_prefix_anyhow,
+        Path::strip_prefix,
+        AsRefPath: prefix,
+        &Path
+    );
 
-    wrap_nullary_option_method!(
+    wrap_method!(
         file_stem_anyhow,
         Path::file_stem,
         &OsStr,
-        "missing expected filename"
+        None: "missing expected filename"
     );
 
-    wrap_nullary_option_method!(
+    wrap_method!(
         extension_anyhow,
         Path::extension,
         &OsStr,
-        "missing expected extension"
+        None: "missing expected extension"
     );
 
-    wrap_nullary_result_method!(metadata_anyhow, Path::metadata, Metadata);
-    wrap_nullary_result_method!(symlink_metadata_anyhow, Path::symlink_metadata, Metadata);
-    wrap_nullary_result_method!(canonicalize_anyhow, Path::canonicalize, PathBuf);
-    wrap_nullary_result_method!(read_link_anyhow, Path::read_link, PathBuf);
-    wrap_nullary_result_method!(read_dir_anyhow, Path::read_dir, ReadDir);
-
-    fn copy_anyhow<P>(&self, to: P) -> anyhow::Result<u64>
-    where
-        P: AsRef<Path>,
-    {
-        let to = to.as_ref();
-        std::fs::copy(self, to)
-            .with_context(|| format!("while copying {:?} to {:?}", self.display(), to.display()))
-    }
-
-    wrap_nullary_result_method!(create_dir_anyhow, std::fs::create_dir, ());
-    wrap_nullary_result_method!(create_dir_all_anyhow, std::fs::create_dir_all, ());
-
-    fn hard_link_anyhow<P>(&self, link: P) -> anyhow::Result<()>
-    where
-        P: AsRef<Path>,
-    {
-        let link = link.as_ref();
-        std::fs::hard_link(self, link).with_context(|| {
-            format!(
-                "while hard-linking {:?} to {:?}",
-                self.display(),
-                link.display()
-            )
-        })
-    }
-
-    wrap_nullary_result_method!(read_anyhow, std::fs::read, Vec<u8>);
-    wrap_nullary_result_method!(read_to_string_anyhow, std::fs::read_to_string, String);
-    wrap_nullary_result_method!(remove_dir_anyhow, std::fs::remove_dir, ());
-    wrap_nullary_result_method!(remove_dir_all_anyhow, std::fs::remove_dir_all, ());
-    wrap_nullary_result_method!(remove_file_anyhow, std::fs::remove_file, ());
-
-    fn rename_anyhow<P>(&self, to: P) -> anyhow::Result<()>
-    where
-        P: AsRef<Path>,
-    {
-        let to = to.as_ref();
-        std::fs::rename(self, to)
-            .with_context(|| format!("while renaming {:?} to {:?}", self.display(), to.display()))
-    }
+    wrap_method!(metadata_anyhow, Path::metadata, Metadata);
+    wrap_method!(symlink_metadata_anyhow, Path::symlink_metadata, Metadata);
+    wrap_method!(canonicalize_anyhow, Path::canonicalize, PathBuf);
+    wrap_method!(read_link_anyhow, Path::read_link, PathBuf);
+    wrap_method!(read_dir_anyhow, Path::read_dir, ReadDir);
+    wrap_method!(copy_anyhow, std::fs::copy, AsRefPath: copy_to, u64);
+    wrap_method!(create_dir_anyhow, std::fs::create_dir, ());
+    wrap_method!(create_dir_all_anyhow, std::fs::create_dir_all, ());
+    wrap_method!(hard_link_anyhow, std::fs::hard_link, AsRefPath: link_to, ());
+    wrap_method!(read_anyhow, std::fs::read, Vec<u8>);
+    wrap_method!(read_to_string_anyhow, std::fs::read_to_string, String);
+    wrap_method!(remove_dir_anyhow, std::fs::remove_dir, ());
+    wrap_method!(remove_dir_all_anyhow, std::fs::remove_dir_all, ());
+    wrap_method!(remove_file_anyhow, std::fs::remove_file, ());
+    wrap_method!(rename_anyhow, std::fs::rename, AsRefPath: rename_to, ());
 
     fn set_readonly_anyhow(&self, readonly: bool) -> anyhow::Result<()> {
         let mut perms = self.metadata_anyhow()?.permissions();
