@@ -1,6 +1,7 @@
+use crate::readdir::ReadDir;
 use anyhow::Context;
 use std::ffi::OsStr;
-use std::fs::{Metadata, ReadDir};
+use std::fs::Metadata;
 use std::path::{Path, PathBuf};
 
 /// Extend [Path] with [anyhow] methods
@@ -161,7 +162,7 @@ impl PathAnyhow for Path {
     wrap_method!(symlink_metadata_anyhow, Path::symlink_metadata, Metadata);
     wrap_method!(canonicalize_anyhow, Path::canonicalize, PathBuf);
     wrap_method!(read_link_anyhow, Path::read_link, PathBuf);
-    wrap_method!(read_dir_anyhow, Path::read_dir, ReadDir);
+    wrap_method!(read_dir_anyhow, ReadDir::from_path, ReadDir);
     wrap_method!(copy_anyhow, std::fs::copy, AsRefPath: copy_to, u64);
     wrap_method!(create_dir_anyhow, std::fs::create_dir, ());
     wrap_method!(create_dir_all_anyhow, std::fs::create_dir_all, ());
