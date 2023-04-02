@@ -105,3 +105,6 @@ impl Deref for Metadata {
         &self.md
     }
 }
+
+#[cfg(test)]
+mod tests;
