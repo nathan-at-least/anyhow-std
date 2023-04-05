@@ -26,12 +26,19 @@ impl Iterator for ReadDir {
     type Item = anyhow::Result<DirEntry>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.rd.next().map(|stditem| {
-            stditem
-                .map(|de| DirEntry { de })
-                .with_context(|| format!("while reading directory {:?}", self.path.display()))
-        })
+        wrap_read_dir_item(&self.path, self.rd.next())
     }
+}
+
+fn wrap_read_dir_item(
+    path: &Path,
+    item: Option<std::io::Result<std::fs::DirEntry>>,
+) -> Option<anyhow::Result<DirEntry>> {
+    item.map(|stditem| {
+        stditem
+            .map(|de| DirEntry { de })
+            .with_context(|| format!("while reading directory {:?}", path.display()))
+    })
 }
 
 /// Wraps [std::fs::DirEntry] to provide the path as error context
