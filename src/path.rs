@@ -1,4 +1,4 @@
-use crate::readdir::ReadDir;
+use crate::fs::ReadDir;
 use anyhow::Context;
 use std::ffi::OsStr;
 use std::fs::Metadata;
