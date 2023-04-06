@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "^1.0.69"
+anyhow = "1.0.69"
+derive-new = "0.5.9"
+derive_more = "0.99.17"
 
 [dev-dependencies]
 tempfile = "3.5.0"

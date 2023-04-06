@@ -32,7 +32,7 @@ fn wrap_read_dir_item(
 ) -> Option<anyhow::Result<DirEntry>> {
     item.map(|stditem| {
         stditem
-            .map(DirEntry::wrap)
+            .map(DirEntry::from)
             .with_context(|| format!("while reading directory {:?}", path.display()))
     })
 }
