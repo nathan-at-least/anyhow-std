@@ -1,7 +1,7 @@
+use crate::fs::Metadata;
 use crate::fs::ReadDir;
 use anyhow::Context;
 use std::ffi::OsStr;
-use std::fs::Metadata;
 use std::path::{Path, PathBuf};
 
 /// Extend [Path] with [anyhow] methods
@@ -158,8 +158,18 @@ impl PathAnyhow for Path {
         None: "missing expected extension"
     );
 
-    wrap_method!(metadata_anyhow, Path::metadata, Metadata);
-    wrap_method!(symlink_metadata_anyhow, Path::symlink_metadata, Metadata);
+    wrap_method!(
+        metadata_anyhow,
+        |p: &Path| p.metadata().map(|md| Metadata::from((md, p.to_path_buf()))),
+        Metadata
+    );
+    wrap_method!(
+        symlink_metadata_anyhow,
+        |p: &Path| p
+            .symlink_metadata()
+            .map(|md| Metadata::from((md, p.to_path_buf()))),
+        Metadata
+    );
     wrap_method!(canonicalize_anyhow, Path::canonicalize, PathBuf);
     wrap_method!(read_link_anyhow, Path::read_link, PathBuf);
     wrap_method!(read_dir_anyhow, ReadDir::from_path, ReadDir);
