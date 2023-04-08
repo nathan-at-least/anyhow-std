@@ -1,3 +1,5 @@
+//! Wrappers for [std::fs] types
+
 mod direntry;
 mod metadata;
 mod readdir;

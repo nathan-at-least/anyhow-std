@@ -62,7 +62,7 @@ demonstrate_non_utf8_extension();
 
 ## Extension Traits
 
-A consistent pattern is used to extend [std] types:
+A common pattern is used to extend [std] types:
 
 - An extension trait is provided named `<std type>Anyhow`, for example: [OsStrAnyhow]
 - An impl is provided for the target type, for example `impl OsStrAnyhow for OsStr { … }`
@@ -83,6 +83,29 @@ isn't necessarily an "error" per se, but the `…_anyhow` methods result
 in an error in this case. So these methods should only be used when code
 expects `Some` results, and if your code should handle `None` as a
 "non-error", it can simply use the [std] method.
+
+## Wrapper types
+
+In some cases, it is more ergonomic to use a "wrapper type"
+pattern rather than an extension trait. The prime example
+is [ReadDir](crate::fs::ReadDir) which is returned from
+[`PathAnyhow::read_dir_anyhow`]. This wraps the underlying
+[std::fs::ReadDir] in order to provide path context in errors during
+iteration.
+
+Wrapper types _override_ the underlying [std] type methods, rather than
+using the `…_anyhow` naming convention. They also provide a
+[std::ops::Deref] impl for the underlying [std] type, so all
+non-overridden methods can be called.
+
+Finally, wrapper types provide means to move into and out of the std
+types implementations in case calling code must access the
+underlying. However, the data may include extra values beyond the wrapped
+[std] type in order ot provide error context.
+
+For example, for [crate::fs::Metadata::new] and
+[crate::fs::Metadata::unwrap] convert from/to a [std::fs::Metadata] and
+[PathBuf](std::fs::PathBuf) pair, the latter providing error context.
 
 ## API Coverage
 
