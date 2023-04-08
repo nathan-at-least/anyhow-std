@@ -3,7 +3,7 @@ use std::ops::Deref;
 use std::path::PathBuf;
 use std::time::SystemTime;
 
-/// Wraps [std::fs::DirEntry] to provide the path as error context
+/// Wraps [std::fs::Metadata] to provide the path as error context
 #[derive(Debug, derive_new::new)]
 pub struct Metadata {
     md: std::fs::Metadata,
