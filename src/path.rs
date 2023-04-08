@@ -81,7 +81,7 @@ pub trait PathAnyhow {
 
     /// Wrap [std::fs::set_permissions], providing the path as error context
     ///
-    /// This method factors out the complexity of retrieving [std::fs::Permisisons], modifying
+    /// This method factors out the complexity of retrieving [std::fs::Permissions], modifying
     /// them, and then setting them.
     fn set_readonly_anyhow(&self, readonly: bool) -> anyhow::Result<()>;
     /// Wrap [std::fs::rename], providing `self` and `to` as error context

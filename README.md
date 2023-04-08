@@ -86,26 +86,26 @@ expects `Some` results, and if your code should handle `None` as a
 
 ## Wrapper types
 
-In some cases, it is more ergonomic to use a "wrapper type"
-pattern rather than an extension trait. The prime example
-is [ReadDir](crate::fs::ReadDir) which is returned from
-[`PathAnyhow::read_dir_anyhow`]. This wraps the underlying
-[std::fs::ReadDir] in order to provide path context in errors during
-iteration.
+In some cases, it is necessary to use a "wrapper type" pattern
+rather than an extension trait, primarily to track extra data
+used in error contexts. For example the [crate::fs] wrapper types
+[ReadDir](crate::fs::ReadDir), [DirEntry](crate::fs::DirEntry), and
+[Metadata](crate::fs::Metadata) each own a [PathBuf](std::path::PathBuf)
+in addition to the underlying [std::fs] type in order to provide paths
+in error contexts, in order to provide helpful error context for common
+directory and fs traversal uses.
 
-Wrapper types _override_ the underlying [std] type methods, rather than
-using the `…_anyhow` naming convention. They also provide a
-[std::ops::Deref] impl for the underlying [std] type, so all
-non-overridden methods can be called.
+Wrapper types _override_ some underlying [std] type methods, rather
+than using the `…_anyhow` naming convention. They also provide
+a [std::ops::Deref] impl for the underlying [std] type, so all
+non-overridden methods can be called naturally and overridden methods
+can be called by explicitly using `wrapper.deref().target_method(…)`.
 
-Finally, wrapper types provide means to move into and out of the std
-types implementations in case calling code must access the
-underlying. However, the data may include extra values beyond the wrapped
-[std] type in order ot provide error context.
-
-For example, for [crate::fs::Metadata::new] and
-[crate::fs::Metadata::unwrap] convert from/to a [std::fs::Metadata] and
-[PathBuf](std::fs::PathBuf) pair, the latter providing error context.
+Types using this wrapper-type pattern consistently provide [From] /
+[Into] implementations for the underlying [std] types plus any error
+context data.  For example, for [crate::fs::Metadata] provides [From] /
+[Into] impls for `(std::fs::Metadata, std::fs::PathBuf)`, the latter
+providing error context.
 
 ## API Coverage
 

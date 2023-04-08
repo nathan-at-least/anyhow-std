@@ -4,19 +4,13 @@ use std::path::PathBuf;
 use std::time::SystemTime;
 
 /// Wraps [std::fs::Metadata] to provide the path as error context
-#[derive(Debug, derive_new::new)]
+#[derive(Debug, derive_more::From, derive_more::Into)]
 pub struct Metadata {
     md: std::fs::Metadata,
     path: PathBuf,
 }
 
 impl Metadata {
-    /// Unwrap into the underlying [std] components:
-    pub fn unwrap(self) -> (std::fs::Metadata, PathBuf) {
-        let Metadata { md, path } = self;
-        (md, path)
-    }
-
     /// Extend [std::fs::Metadata::modified] to provide the path as error context
     pub fn modified(&self) -> anyhow::Result<SystemTime> {
         self.md

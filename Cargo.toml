@@ -9,7 +9,6 @@ license = "MIT"
 
 [dependencies]
 anyhow = "1.0.69"
-derive-new = "0.5.9"
 derive_more = "0.99.17"
 
 [dev-dependencies]

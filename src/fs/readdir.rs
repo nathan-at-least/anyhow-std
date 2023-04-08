@@ -3,7 +3,7 @@ use anyhow::Context;
 use std::path::{Path, PathBuf};
 
 /// Wraps [std::fs::ReadDir] to provide the directory as error context
-#[derive(Debug)]
+#[derive(Debug, derive_more::From, derive_more::Into)]
 pub struct ReadDir {
     rd: std::fs::ReadDir,
     path: PathBuf,
