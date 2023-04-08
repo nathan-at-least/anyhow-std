@@ -2,6 +2,8 @@
 name = "anyhow-std"
 version = "0.1.0"
 description = "Wrap std APIs with anyhow error context."
+homepage = "https://github.com/nathan-at-least/anyhow-std"
+repository = "https://github.com/nathan-at-least/anyhow-std.git"
 edition = "2021"
 license = "MIT"
 
