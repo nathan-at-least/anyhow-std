@@ -103,9 +103,9 @@ types implementations in case calling code must access the
 underlying. However, the data may include extra values beyond the wrapped
 [std] type in order ot provide error context.
 
-For example, for [crate::fs::Metadata::new] and
-[crate::fs::Metadata::unwrap] convert from/to a [std::fs::Metadata] and
-[PathBuf](std::fs::PathBuf) pair, the latter providing error context.
+For example, for [crate::fs::Metadata] provides [From] / [Into] impls
+for `(std::fs::Metadata, std::fs::PathBuf)`, the latter providing error
+context.
 
 ## API Coverage
 

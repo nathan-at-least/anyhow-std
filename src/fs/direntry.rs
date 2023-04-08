@@ -14,7 +14,7 @@ impl DirEntry {
     pub fn metadata(&self) -> anyhow::Result<Metadata> {
         self.de
             .metadata()
-            .map(|md| Metadata::new(md, self.path()))
+            .map(|md| Metadata::from((md, self.path())))
             .with_context(|| format!("while processing path {:?}", self.path().display()))
     }
 
