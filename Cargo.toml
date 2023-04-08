@@ -1,10 +1,14 @@
 [package]
 name = "anyhow-std"
 version = "0.1.0"
+description = "Wrap std APIs with anyhow error context."
 edition = "2021"
+license = "MIT"
 
 [dependencies]
-anyhow = "^1.0.69"
+anyhow = "1.0.69"
+derive-new = "0.5.9"
+derive_more = "0.99.17"
 
 [dev-dependencies]
 tempfile = "3.5.0"
