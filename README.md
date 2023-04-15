@@ -102,10 +102,16 @@ non-overridden methods can be called naturally and overridden methods
 can be called by explicitly using `wrapper.deref().target_method(…)`.
 
 Types using this wrapper-type pattern consistently provide [From] /
-[Into] implementations for the underlying [std] types plus any error
-context data.  For example, for [crate::fs::Metadata] provides [From] /
-[Into] impls for `(std::fs::Metadata, std::fs::PathBuf)`, the latter
-providing error context.
+[Into] implementations where possible for the underlying [std] types plus
+any error context data.  For example, for [crate::fs::Metadata] provides
+[From] / [Into] impls for `(std::fs::Metadata, std::fs::PathBuf)`,
+the latter providing error context. There is an exception to this
+for [Child](crate::process::Child) because it mutates the underlying
+[std::process::Child] upon construction.
+
+Finally, the [Output](crate::process::Output) type is an exception to
+this wrapper pattern because it provides no methods and exposes all
+contents as `pub` fields.
 
 ## API Coverage
 

@@ -1,4 +1,4 @@
-//! Wrappers for [std::process] which provide commands as error context
+//! Wrappers for [std::process] which provide commands in error contexts
 
 mod child;
 mod command;
