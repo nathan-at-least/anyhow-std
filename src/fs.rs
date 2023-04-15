@@ -1,4 +1,4 @@
-//! Wrappers for [std::fs] types
+//! Wrappers for [std::fs] which provide paths in error contexts
 
 mod direntry;
 mod metadata;
