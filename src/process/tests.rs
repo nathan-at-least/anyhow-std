@@ -1,4 +1,4 @@
-use crate::process::CommandAnyhow;
+use crate::process::{Child, CommandAnyhow, ExitStatus};
 use std::process::Command;
 use test_case::test_case;
 
@@ -18,4 +18,40 @@ where
         // BUG: Platform specific error message:
         r#"command: "/! we assume this program does not exist !/" "ARG": No such file or directory (os error 2)"#,
     );
+}
+
+#[test]
+fn exit_ok_error() -> anyhow::Result<()> {
+    use std::process::Stdio;
+
+    let es: ExitStatus = Command::new("cargo")
+        .arg("! we assume this arg does not exit !")
+        .stderr(Stdio::null())
+        .status_anyhow()?;
+
+    assert_eq!(
+        format!("{:#}", es.exit_ok().err().unwrap()),
+        // BUG: Platform specific error message:
+        r#"status: 101: error exit status"#,
+    );
+
+    Ok(())
+}
+
+#[test]
+fn kill_twice() -> anyhow::Result<()> {
+    let mut c: Child = Command::new("sleep").arg("1234").spawn_anyhow()?;
+
+    c.kill()?;
+    let status = c.wait()?;
+    assert!(!status.success());
+    assert_eq!(None, status.code());
+
+    assert_eq!(
+        format!("{:#}", c.kill().err().unwrap()),
+        // BUG: Platform specific error message:
+        r#"command: "sleep" "1234": invalid argument: can't kill an exited process"#,
+    );
+
+    Ok(())
 }

@@ -1,5 +1,6 @@
 use crate::process::ExitStatus;
 
+/// Isomorphic to [std::process::Output] except replacing `status` with the [ExitStatus] wrapper
 #[derive(Debug)]
 pub struct Output {
     pub status: ExitStatus,

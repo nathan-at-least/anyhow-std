@@ -1,5 +1,6 @@
 use std::ops::Deref;
 
+/// Wrap [std::process::ExitStatus] to provide the command in error contexts
 #[derive(Debug, derive_more::From, derive_more::Into)]
 pub struct ExitStatus {
     es: std::process::ExitStatus,
@@ -15,7 +16,8 @@ impl Deref for ExitStatus {
 }
 
 impl ExitStatus {
-    pub fn exit_ok_anyhow(&self) -> anyhow::Result<()> {
+    /// Emulate nightly [ExitStatus::exit_ok](std::process::ExitStatus::exit_ok), provide the command in error contexts
+    pub fn exit_ok(&self) -> anyhow::Result<()> {
         if self.success() {
             Ok(())
         } else {
@@ -28,8 +30,9 @@ impl ExitStatus {
         }
     }
 
-    pub fn exit_anyhow(&self) -> ! {
-        let code = match self.exit_ok_anyhow() {
+    /// Exit the process; on errors print the error message to stderr
+    pub fn exit(&self) -> ! {
+        let code = match self.exit_ok() {
             Ok(()) => 0,
             Err(e) => {
                 eprintln!("{:#}", e);

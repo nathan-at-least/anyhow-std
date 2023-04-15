@@ -2,10 +2,18 @@ use crate::process::{Child, ExitStatus, Output};
 use anyhow::Context;
 use std::process::Command;
 
+/// Extend [std::process::Command] with [anyhow] methods
 pub trait CommandAnyhow {
+    /// Wrap [Command::spawn](std::process::Command::spawn), providing the command as error context
     fn spawn_anyhow(&mut self) -> anyhow::Result<Child>;
+
+    /// Wrap [Command::output](std::process::Command::output), providing the command as error context
     fn output_anyhow(&mut self) -> anyhow::Result<Output>;
+
+    /// Wrap [Command::status](std::process::Command::status), providing the command as error context
     fn status_anyhow(&mut self) -> anyhow::Result<ExitStatus>;
+
+    /// Describe the command for error contexts
     fn anyhow_context(&self) -> String;
 }
 

@@ -3,6 +3,7 @@ use anyhow::Context;
 use std::ops::Deref;
 use std::process::{ChildStderr, ChildStdin, ChildStdout};
 
+/// Wrap [std::process::Child] to provide the command as error context
 #[derive(Debug)]
 pub struct Child {
     pub stdin: Option<ChildStdin>,
@@ -33,10 +34,12 @@ impl Deref for Child {
 }
 
 impl Child {
+    /// Override [std::process::Child::kill] with the command as error context
     pub fn kill(&mut self) -> anyhow::Result<()> {
         self.child.kill().context(self.cmddesc.clone())
     }
 
+    /// Override [std::process::Child::wait] with the command as error context
     pub fn wait(&mut self) -> anyhow::Result<ExitStatus> {
         self.child
             .wait()
@@ -44,6 +47,7 @@ impl Child {
             .context(self.cmddesc.clone())
     }
 
+    /// Override [std::process::Child::try_wait] with the command as error context
     pub fn try_wait(&mut self) -> anyhow::Result<Option<ExitStatus>> {
         self.child
             .try_wait()
@@ -51,6 +55,7 @@ impl Child {
             .context(self.cmddesc.clone())
     }
 
+    /// Override [std::process::Child::wait_with_output] with the command as error context
     pub fn wait_with_output(self) -> anyhow::Result<Output> {
         self.child
             .wait_with_output()
