@@ -1,3 +1,4 @@
+//! Wrappers for [mod@std::env]
 use anyhow::{anyhow, Context};
 use std::ffi::{OsStr, OsString};
 
