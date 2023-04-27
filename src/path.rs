@@ -89,6 +89,9 @@ pub trait PathAnyhow {
     fn write_anyhow<C>(&self, contents: C) -> anyhow::Result<()>
     where
         C: AsRef<[u8]>;
+
+    /// Wrap [std::env::set_current_dir], providing the path as error context
+    fn set_to_current_dir_anyhow(&self) -> anyhow::Result<()>;
 }
 
 macro_rules! wrap_method {
@@ -199,6 +202,8 @@ impl PathAnyhow for Path {
         std::fs::write(self, contents)
             .with_context(|| format!("while writing to {:?}", self.display()))
     }
+
+    wrap_method!(set_to_current_dir_anyhow, std::env::set_current_dir, ());
 }
 
 #[cfg(test)]
