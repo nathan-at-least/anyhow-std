@@ -84,8 +84,8 @@ pub trait PathAnyhow {
     /// This method factors out the complexity of retrieving [std::fs::Permissions], modifying
     /// them, and then setting them.
     fn set_readonly_anyhow(&self, readonly: bool) -> anyhow::Result<()>;
-    /// Wrap [std::fs::rename], providing `self` and `to` as error context
 
+    /// Wrap [std::fs::write], providing the path as error context
     fn write_anyhow<C>(&self, contents: C) -> anyhow::Result<()>
     where
         C: AsRef<[u8]>;
