@@ -1,5 +1,6 @@
 // BUGS: Many tests use unix-specific paths, primarily by assuming "/" exists as a directory.
 
+use crate::testutils::{assert_error_desc_eq, err_str, stringify_error};
 use crate::{OsStrAnyhow, PathAnyhow};
 use std::ffi::OsStr;
 use std::path::Path;
@@ -383,15 +384,13 @@ fn write((): ()) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn assert_error_desc_eq<T>(res: anyhow::Result<T>, expected: &str) {
-    let error = format!("{:#}", res.err().unwrap());
-    assert_eq!(error, expected.trim_end());
-}
-
-fn err_str<T>(s: &str) -> Result<T, String> {
-    Err(s.to_string())
-}
-
-fn stringify_error<T>(res: anyhow::Result<T>) -> Result<T, String> {
-    res.map_err(|e| format!("{:#}", e))
+#[test_case(
+    "/this/path/should/not/exist"
+    => err_str(
+        r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
+    )
+    ; "non-existent"
+)]
+fn set_to_current_dir(input: &str) -> Result<(), String> {
+    stringify_error(Path::new(input).set_to_current_dir_anyhow())
 }
