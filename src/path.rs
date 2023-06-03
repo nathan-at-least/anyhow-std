@@ -2,6 +2,7 @@ use crate::fs::Metadata;
 use crate::fs::ReadDir;
 use anyhow::Context;
 use std::ffi::OsStr;
+use std::fs::{File, Permissions};
 use std::path::{Path, PathBuf};
 
 /// Extend [Path] with [anyhow] methods
@@ -80,6 +81,9 @@ pub trait PathAnyhow {
         P: AsRef<Path>;
 
     /// Wrap [std::fs::set_permissions], providing the path as error context
+    fn set_permissions_anyhow(&self, perm: Permissions) -> anyhow::Result<()>;
+
+    /// Toggle read-only permission for the path
     ///
     /// This method factors out the complexity of retrieving [std::fs::Permissions], modifying
     /// them, and then setting them.
@@ -92,6 +96,13 @@ pub trait PathAnyhow {
 
     /// Wrap [std::env::set_current_dir], providing the path as error context
     fn set_to_current_dir_anyhow(&self) -> anyhow::Result<()>;
+
+    // File APIs:
+    /// Open a [File] in read-only mode wrapping [File::open]
+    fn open_file_anyhow(&self) -> anyhow::Result<File>;
+
+    /// Open a [File] in write-only mode wrapping [File::create]
+    fn create_file_anyhow(&self) -> anyhow::Result<File>;
 }
 
 macro_rules! wrap_method {
@@ -187,12 +198,16 @@ impl PathAnyhow for Path {
     wrap_method!(remove_file_anyhow, std::fs::remove_file, ());
     wrap_method!(rename_anyhow, std::fs::rename, AsRefPath: rename_to, ());
 
+    fn set_permissions_anyhow(&self, perms: Permissions) -> anyhow::Result<()> {
+        std::fs::set_permissions(self, perms.clone())
+            .with_context(|| format!("with permissions {:?}", perms))
+            .with_context(|| format!("while processing path {:?}", self.display()))
+    }
+
     fn set_readonly_anyhow(&self, readonly: bool) -> anyhow::Result<()> {
         let mut perms = self.metadata_anyhow()?.permissions();
-        perms.set_readonly(true);
-        std::fs::set_permissions(self, perms)
-            .with_context(|| format!("with readonly permission {:?}", readonly))
-            .with_context(|| format!("while processing path {:?}", self.display()))
+        perms.set_readonly(readonly);
+        self.set_permissions_anyhow(perms)
     }
 
     fn write_anyhow<C>(&self, contents: C) -> anyhow::Result<()>
@@ -204,6 +219,8 @@ impl PathAnyhow for Path {
     }
 
     wrap_method!(set_to_current_dir_anyhow, std::env::set_current_dir, ());
+    wrap_method!(open_file_anyhow, File::open, File);
+    wrap_method!(create_file_anyhow, File::create, File);
 }
 
 #[cfg(test)]

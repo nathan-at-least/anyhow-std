@@ -367,6 +367,18 @@ fn rename((): ()) -> anyhow::Result<()> {
     Ok(())
 }
 
+#[test_case(
+    "/this/path/should/not/exist"
+    => err_str(
+        r#"while processing path "/this/path/should/not/exist": with permissions Permissions(FilePermissions { mode: 16877 }): No such file or directory (os error 2)"#,
+    )
+    ; "non-existent"
+)]
+fn set_permissions(input: &str) -> Result<(), String> {
+    let perms = stringify_error(Path::new("/").metadata_anyhow())?.permissions();
+    stringify_error(Path::new(input).set_permissions_anyhow(perms))
+}
+
 #[test_case((); "permission denied")]
 fn write((): ()) -> anyhow::Result<()> {
     let dir = tempfile::TempDir::new()?;
@@ -393,4 +405,26 @@ fn write((): ()) -> anyhow::Result<()> {
 )]
 fn set_to_current_dir(input: &str) -> Result<(), String> {
     stringify_error(Path::new(input).set_to_current_dir_anyhow())
+}
+
+#[test_case(
+    "/this/path/should/not/exist"
+    => err_str(
+        r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
+    )
+    ; "non-existent"
+)]
+fn open_file(input: &str) -> Result<(), String> {
+    stringify_error(Path::new(input).open_file_anyhow().map(|_| ()))
+}
+
+#[test_case(
+    "/this/path/should/not/exist"
+    => err_str(
+        r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
+    )
+    ; "non-existent"
+)]
+fn create_file(input: &str) -> Result<(), String> {
+    stringify_error(Path::new(input).create_file_anyhow().map(|_| ()))
 }
