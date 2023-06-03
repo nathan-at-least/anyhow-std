@@ -394,3 +394,25 @@ fn write((): ()) -> anyhow::Result<()> {
 fn set_to_current_dir(input: &str) -> Result<(), String> {
     stringify_error(Path::new(input).set_to_current_dir_anyhow())
 }
+
+#[test_case(
+    "/this/path/should/not/exist"
+    => err_str(
+        r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
+    )
+    ; "non-existent"
+)]
+fn open_file(input: &str) -> Result<(), String> {
+    stringify_error(Path::new(input).open_file_anyhow().map(|_| ()))
+}
+
+#[test_case(
+    "/this/path/should/not/exist"
+    => err_str(
+        r#"while processing path "/this/path/should/not/exist": No such file or directory (os error 2)"#,
+    )
+    ; "non-existent"
+)]
+fn create_file(input: &str) -> Result<(), String> {
+    stringify_error(Path::new(input).create_file_anyhow().map(|_| ()))
+}

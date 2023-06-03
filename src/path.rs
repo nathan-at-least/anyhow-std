@@ -2,6 +2,7 @@ use crate::fs::Metadata;
 use crate::fs::ReadDir;
 use anyhow::Context;
 use std::ffi::OsStr;
+use std::fs::File;
 use std::path::{Path, PathBuf};
 
 /// Extend [Path] with [anyhow] methods
@@ -92,6 +93,13 @@ pub trait PathAnyhow {
 
     /// Wrap [std::env::set_current_dir], providing the path as error context
     fn set_to_current_dir_anyhow(&self) -> anyhow::Result<()>;
+
+    // File APIs:
+    /// Open a [File] in read-only mode wrapping [File::open]
+    fn open_file_anyhow(&self) -> anyhow::Result<File>;
+
+    /// Open a [File] in write-only mode wrapping [File::create]
+    fn create_file_anyhow(&self) -> anyhow::Result<File>;
 }
 
 macro_rules! wrap_method {
@@ -204,6 +212,8 @@ impl PathAnyhow for Path {
     }
 
     wrap_method!(set_to_current_dir_anyhow, std::env::set_current_dir, ());
+    wrap_method!(open_file_anyhow, File::open, File);
+    wrap_method!(create_file_anyhow, File::create, File);
 }
 
 #[cfg(test)]
