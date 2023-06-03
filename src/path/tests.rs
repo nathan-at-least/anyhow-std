@@ -367,6 +367,18 @@ fn rename((): ()) -> anyhow::Result<()> {
     Ok(())
 }
 
+#[test_case(
+    "/this/path/should/not/exist"
+    => err_str(
+        r#"while processing path "/this/path/should/not/exist": with permissions Permissions(FilePermissions { mode: 16877 }): No such file or directory (os error 2)"#,
+    )
+    ; "non-existent"
+)]
+fn set_permissions(input: &str) -> Result<(), String> {
+    let perms = stringify_error(Path::new("/").metadata_anyhow())?.permissions();
+    stringify_error(Path::new(input).set_permissions_anyhow(perms))
+}
+
 #[test_case((); "permission denied")]
 fn write((): ()) -> anyhow::Result<()> {
     let dir = tempfile::TempDir::new()?;
