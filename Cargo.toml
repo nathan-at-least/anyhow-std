@@ -1,6 +1,6 @@
 [package]
 name = "anyhow-std"
-version = "0.1.3"
+version = "0.1.4"
 description = "Wrap std APIs with anyhow error context."
 homepage = "https://github.com/nathan-at-least/anyhow-std"
 repository = "https://github.com/nathan-at-least/anyhow-std.git"
