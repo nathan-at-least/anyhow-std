@@ -116,6 +116,7 @@ macro_rules! wrap_method {
     };
 
     ( $method:ident, $cb:expr, $ret:ty ) => {
+        #[allow(clippy::redundant_closure_call)]
         fn $method(&self) -> anyhow::Result<$ret> {
             $cb(self).with_context(|| format!("while processing path {:?}", self.display()))
         }
