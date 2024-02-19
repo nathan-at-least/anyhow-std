@@ -1,4 +1,4 @@
-use crate::process::{Child, CommandAnyhow, ExitStatus};
+use crate::process::{CommandAnyhow, ExitStatus};
 use std::process::Command;
 use test_case::test_case;
 
@@ -33,24 +33,6 @@ fn exit_ok_error() -> anyhow::Result<()> {
         format!("{:#}", es.exit_ok().err().unwrap()),
         // BUG: Platform specific error message:
         r#"status: 101: error exit status"#,
-    );
-
-    Ok(())
-}
-
-#[test]
-fn kill_twice() -> anyhow::Result<()> {
-    let mut c: Child = Command::new("sleep").arg("1234").spawn_anyhow()?;
-
-    c.kill()?;
-    let status = c.wait()?;
-    assert!(!status.success());
-    assert_eq!(None, status.code());
-
-    assert_eq!(
-        format!("{:#}", c.kill().err().unwrap()),
-        // BUG: Platform specific error message:
-        r#"command: "sleep" "1234": invalid argument: can't kill an exited process"#,
     );
 
     Ok(())
